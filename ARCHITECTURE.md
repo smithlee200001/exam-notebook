@@ -1,3 +1,17 @@
+# 当前默认路径：独立练习题
+
+整页照片只在浏览器内存中解码和预览。选区以原始二进制发送到 `/api/practice/ocr`，后端仅在内存解码、重编码，使用 Tesseract stdin/stdout，不落盘保存输入或原始 OCR 输出。
+
+SQLite 新增两张表（`practice.py` 自动初始化）：
+- `practice_question`：id/title/有序 blocks JSON/choices JSON/parts JSON/独立 answer 和 explanation/created_at。
+- `question_asset`：id/question_id/重编码 PNG BLOB/alt。只有用户逐张确认过的图表进入保存事务。该确认不是自动隐私检测。
+
+题面 blocks 为 text、latex 或 image 引用。图片不得指定远程 URL、文件路径或 SVG；文字用 textContent，公式由本地 KaTeX（trust:false）渲染。列表及题面详情不包含答案字段，答案须显式请求独立接口。没有历史作答字段、自动判题或整卷导出。
+
+既有数据和接口保留，不做破坏性迁移；首页不再提供旧写入路径。新旧表无外键关联，练习题重开不需要原图。旧写入 API 仍可被直接调用，不应把它误认为新隐私流程；关闭/迁移需单独决定。
+
+## 以下为保留的旧版整卷目标设计（非当前默认流程）
+
 # 整卷拍照 → 错题本：数据与处理设计
 
 ## Demo 与目标系统的边界
