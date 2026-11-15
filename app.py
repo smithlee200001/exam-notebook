@@ -168,6 +168,8 @@ def create_app(data_dir=None):
         response = questions()
         response.headers['Content-Disposition'] = 'attachment; filename=wrong-questions.json'
         return response
+    from practice import make_practice
+    app.register_blueprint(make_practice(dbpath, ROOT / 'samples/exam.png'))
     return app
 
 if __name__ == '__main__':
