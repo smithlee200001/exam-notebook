@@ -57,6 +57,8 @@ Windows 按 Tesseract 官方安装说明选择安装包，安装简体中文语�
 5. 点击卡片“查看来源与选区”，或“导出错题 JSON”。
 6. 要验证真实 OCR，框选试卷底部英文测试区，选“英文 / 数字”，点击“本地 OCR”。
 
+选区发生变化时，会清空未保存的校对内容，避免把上一题的文字保存到新选区。正在识别的旧选区结果也会失效；同一选区的新请求或手动修改不会被旧响应覆盖。请先保存当前题目，再切换选区。
+
 ## 数据、隐私与备份
 
 默认 `data/` 存放：
@@ -79,6 +81,7 @@ Windows 按 Tesseract 官方安装说明选择安装包，安装简体中文语�
 python -m pip install -r requirements-dev.txt
 python -m pytest -q
 node --check static/app.js   # 可选 JS 语法检查
+node --test tests/test_frontend.cjs  # Node.js 18+，合成 DOM/HTTP 的 OCR 选区竞态回归
 ```
 
 已在 Linux / Python 3.12 验证：完整 API 收录流程、重启持久化、真实 Tesseract 英文测试、非法输入、跨域及 Host 拒绝、原图保留和校验和。没有在 macOS/Windows 实机运行；云浏览器与执行容器隔离，无法连接 localhost，**未完成真实浏览器端到端验收**。

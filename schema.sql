@@ -232,7 +232,7 @@ END; $$;
 CREATE TRIGGER question_touch BEFORE UPDATE ON question FOR EACH ROW EXECUTE FUNCTION question_touch();
 CREATE FUNCTION question_audit() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
-  INSERT INTO question_revision(question_id,revision,snapshot)
+  INSERT INTO notebook.question_revision(question_id,revision,snapshot)
   VALUES(NEW.id,NEW.revision,to_jsonb(NEW));
   RETURN NEW;
 END; $$;
