@@ -2,10 +2,7 @@ import base64
 import io
 import json
 from pathlib import Path
-import shutil
 import sqlite3
-import subprocess
-from types import SimpleNamespace
 
 from PIL import Image, PngImagePlugin
 import pytest
@@ -53,29 +50,26 @@ def test_standalone_survives_restart_answers_hidden(tmp_path):
     assert list((tmp_path / 'originals').iterdir()) == []
 
 
-def test_ocr_does_not_persist_input_or_raw_text(tmp_path, monkeypatch):
-    client = create_app(tmp_path).test_client()
-    before = contents(tmp_path)
-    monkeypatch.setattr('practice.shutil.which', lambda _: '/tesseract')
-    def run(args, **kwargs):
-        assert args[1:3] == ['stdin', 'stdout']
-        assert b'HEADER_PRIVATE' not in kwargs['input']
-        return SimpleNamespace(returncode=0, stdout='识别文字'.encode())
-    monkeypatch.setattr('practice.subprocess.run', run)
+def test_ocr_does_not_persist_input_or_raw_text(tmp_path, fake_cli):
+    client = create_app(tmp_path / 'data').test_client()
+    before = contents(tmp_path / 'data')
+    temporary = fake_cli()
     r = client.post('/api/practice/ocr?lang=chi_sim%2Beng', data=png(), content_type='application/octet-stream')
-    assert r.status_code == 200 and r.json['text'] == '识别文字'
-    assert contents(tmp_path) == before
+    assert r.status_code == 200 and '识别文字' in r.json['text']
+    assert r.headers['Cache-Control'] == 'no-store'
+    assert contents(tmp_path / 'data') == before
+    assert list(temporary.iterdir()) == []
 
 
-def test_ocr_failure_no_files(tmp_path, monkeypatch):
-    client = create_app(tmp_path).test_client()
-    before = contents(tmp_path)
-    monkeypatch.setattr('practice.shutil.which', lambda _: '/tesseract')
-    def timeout(*args, **kwargs):
-        raise subprocess.TimeoutExpired('tesseract', 45)
-    monkeypatch.setattr('practice.subprocess.run', timeout)
-    assert client.post('/api/practice/ocr', data=png(), content_type='application/octet-stream').status_code == 400
-    assert contents(tmp_path) == before
+def test_ocr_failure_no_files(tmp_path, monkeypatch, fake_cli):
+    client = create_app(tmp_path / 'data').test_client()
+    before = contents(tmp_path / 'data')
+    temporary = fake_cli('timeout')
+    monkeypatch.setattr('codex_ocr.TIMEOUT_SECONDS', 0.1)
+    r = client.post('/api/practice/ocr', data=png(), content_type='application/octet-stream')
+    assert r.status_code == 400 and '超时' in r.json['error']
+    assert contents(tmp_path / 'data') == before
+    assert list(temporary.iterdir()) == []
 
 
 def test_approved_assets_strip_metadata_and_no_orphans(tmp_path):
@@ -133,9 +127,9 @@ def test_legacy_data_is_untouched(tmp_path):
     assert {k: v for k, v in contents(tmp_path).items() if k != 'notebook.sqlite3'} == before
 
 
-@pytest.mark.skipif(not shutil.which('tesseract'), reason='Local Tesseract not installed')
-def test_real_crop_ocr_no_storage(tmp_path):
+def test_synthetic_crop_cli_no_storage(tmp_path, fake_cli):
     client = create_app(tmp_path).test_client()
+    fake_cli()
     before = contents(tmp_path)
     source = Image.open(Path('samples/exam.png'))
     out = io.BytesIO()

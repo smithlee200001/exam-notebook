@@ -3,14 +3,14 @@ import base64
 import binascii
 import io
 import json
-import shutil
 import sqlite3
-import subprocess
 import uuid
 import warnings
 
 from flask import Blueprint, Response, jsonify, request
 from PIL import Image, ImageOps
+
+from codex_ocr import recognize
 
 MAX_IMAGE_BYTES = 4 * 1024 * 1024
 MAX_PIXELS = 8_000_000
@@ -107,18 +107,7 @@ def make_practice(dbpath, sample_path):
         lang = request.args.get('lang', 'eng')
         if lang not in ('eng', 'chi_sim+eng'):
             raise ValueError('不支持的 OCR 语言')
-        executable = shutil.which('tesseract')
-        if not executable:
-            raise ValueError('未安装本地 Tesseract，可手工录入')
-        try:
-            result = subprocess.run([executable, 'stdin', 'stdout', '-l', lang, '--psm', '6'],
-                                    input=png, capture_output=True, timeout=45)
-        except subprocess.TimeoutExpired:
-            raise ValueError('OCR 超时，请缩小选区后重试') from None
-        if result.returncode:
-            raise ValueError('OCR 失败，请检查所选语言包；中文需要 chi_sim')
-        return jsonify(text=result.stdout.decode('utf-8').strip(),
-                       engine='Tesseract · 仅识别选区，不保存图片或识别原文', confidence=None)
+        return jsonify(recognize(png, lang))
 
     @bp.post('/api/practice')
     def save():
