@@ -1,18 +1,18 @@
-"""Local-only exam review demo. No cloud calls, telemetry or external assets."""
+"""Local exam notebook with explicit cloud transcription through Codex CLI."""
 import hashlib
 import io
 import json
 import math
 import os
 from pathlib import Path
-import shutil
 import sqlite3
-import subprocess
 import uuid
 import warnings
 
 from flask import Flask, jsonify, request, send_from_directory
 from PIL import Image, ImageOps
+
+import codex_ocr
 
 ROOT = Path(__file__).resolve().parent
 
@@ -78,12 +78,7 @@ def create_app(data_dir=None):
         return app.send_static_file('index.html')
     @app.get('/api/status')
     def status():
-        executable = shutil.which('tesseract')
-        langs = []
-        if executable:
-            result = subprocess.run([executable, '--list-langs'], capture_output=True, text=True, timeout=10)
-            langs = result.stdout.splitlines()[1:]
-        return jsonify(ocr=bool(executable), languages=langs, persistence='SQLite · 本机')
+        return jsonify(codex_ocr.status())
     @app.get('/api/papers')
     def papers():
         with db() as conn:
@@ -122,25 +117,15 @@ def create_app(data_dir=None):
             if p['source'] != 'synthetic':
                 raise ValueError('预置文字只用于合成演示卷，不能识别上传图片')
             return jsonify(text='计算：(-3)² - 2 × 4 = ____。\n解方程：3x + 5 = 20。\n已知三角形两内角为 45°、65°，求第三个内角。', engine='预置演示文字（不是 OCR）', confidence=None)
-        executable = shutil.which('tesseract')
-        if not executable:
-            raise ValueError('未安装本地 Tesseract，可直接手工录入')
+        if 'region' not in payload:
+            raise ValueError('请明确指定要发送给 OpenAI 的选区')
         lang = payload.get('lang', 'eng')
-        if lang not in ('eng', 'chi_sim+eng'):
-            raise ValueError('不支持的 OCR 语言')
-        im = Image.open(data / 'images' / p['image'])
-        x, y, w, h = box
-        buf = io.BytesIO()
-        im.crop((x, y, x+w, y+h)).save(buf, format='PNG')
-        try:
-            result = subprocess.run([executable, 'stdin', 'stdout', '-l', lang, '--psm', '6'], input=buf.getvalue(), capture_output=True, timeout=45)
-        except subprocess.TimeoutExpired:
-            raise ValueError('OCR 超时，请缩小选区后重试')
-        if result.returncode:
-            raise ValueError('本地 OCR 失败，请确认已安装所选语言包（中文：chi_sim）')
-        text = result.stdout.decode('utf-8').strip()
-        (data / 'ocr' / (uuid.uuid4().hex + '.json')).write_text(json.dumps({'paper_id': p['id'], 'region': box, 'engine': 'tesseract', 'language': lang, 'raw_text': text}, ensure_ascii=False), encoding='utf-8')
-        return jsonify(text=text, engine='Tesseract · 本地真实识别', confidence=None)
+        with Image.open(data / 'images' / p['image']) as im:
+            x, y, w, h = box
+            buf = io.BytesIO()
+            im.crop((x, y, x+w, y+h)).save(buf, format='PNG')
+        from practice import clean_image
+        return jsonify(codex_ocr.recognize(clean_image(buf.getvalue()), lang))
     @app.post('/api/questions')
     def save():
         payload = request.get_json() or {}

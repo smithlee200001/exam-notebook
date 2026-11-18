@@ -1,6 +1,5 @@
 import io
 import json
-import shutil
 from pathlib import Path
 import pytest
 from app import create_app
@@ -38,8 +37,8 @@ def test_uploaded_image_not_mock(client):
     p=client.post('/api/upload',data={'file':(io.BytesIO(raw),'../image.png')}).json
     assert client.post('/api/ocr',json={'paper_id':p['id'],'mode':'sample'}).status_code==400
 
-@pytest.mark.skipif(not shutil.which('tesseract'),reason='Local Tesseract not installed')
-def test_real_ocr(client):
+def test_synthetic_ocr(client, fake_cli):
+    fake_cli()
     p=client.post('/api/sample').json
     r=client.post('/api/ocr',json={'paper_id':p['id'],'mode':'real','lang':'eng','region':[80,1360,1060,180]})
     assert r.status_code==200
