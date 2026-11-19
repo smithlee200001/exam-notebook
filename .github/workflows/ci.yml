@@ -44,6 +44,7 @@ jobs:
 
       - name: Check JavaScript and run OCR selection regression tests
         run: |
+          node --check static/bank.js
           node --check static/app.js
           node --check static/practice.js
           node --check static/practice_core.js

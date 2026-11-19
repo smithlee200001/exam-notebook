@@ -94,3 +94,24 @@ def test_legacy_requires_explicit_crop_and_never_saves_ocr(tmp_path, fake_cli):
     response = client.post('/api/ocr', json={'paper_id': paper['id'], 'region': [10, 10, 20, 20]})
     assert response.status_code == 200 and response.json['engine'].startswith('Codex CLI')
     assert list((tmp_path / 'data' / 'ocr').iterdir()) == []
+
+
+def test_recognition_reuses_login_without_api_key(fake_cli, monkeypatch):
+    temporary = fake_cli()
+    monkeypatch.delenv('EXAM_CODEX_API_KEY')
+    assert codex_ocr.recognize(png())['text'] == 'Answer 20 识别文字'
+    assert list(temporary.iterdir()) == []
+
+
+@pytest.mark.parametrize('returncode,expected', [(0, True), (1, False)])
+def test_status_checks_local_login_without_key(fake_cli, monkeypatch, returncode, expected):
+    from types import SimpleNamespace
+    fake_cli()
+    monkeypatch.delenv('EXAM_CODEX_API_KEY')
+    def run(args, **kwargs):
+        assert args[1:] == ['login', 'status']
+        assert kwargs['timeout'] == 5
+        assert 'CODEX_API_KEY' not in kwargs['env']
+        return SimpleNamespace(returncode=returncode)
+    monkeypatch.setattr(codex_ocr.subprocess, 'run', run)
+    assert codex_ocr.status()['ocr'] is expected

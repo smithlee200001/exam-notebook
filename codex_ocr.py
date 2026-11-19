@@ -1,4 +1,4 @@
-"""Explicit, transient image transcription through an isolated Codex CLI process."""
+"""Explicit, transient image transcription through Codex CLI with the current user login."""
 import json
 import os
 from pathlib import Path
@@ -36,14 +36,37 @@ def api_key():
     return os.environ.get('EXAM_CODEX_API_KEY') or os.environ.get('CODEX_API_KEY')
 
 
+def cli_environment():
+    # Reuse the login location without inheriting unrelated secrets or provider overrides.
+    names = ('PATH', 'SYSTEMROOT', 'WINDIR', 'HOME', 'USERPROFILE',
+             'CODEX_HOME', 'XDG_CONFIG_HOME', 'TMPDIR', 'TMP', 'TEMP')
+    env = {name: os.environ[name] for name in names if name in os.environ}
+    if api_key():
+        env['CODEX_API_KEY'] = api_key()
+    return env
+
+
+def logged_in(binary):
+    if not binary:
+        return False
+    try:
+        return subprocess.run([binary, 'login', 'status'], env=cli_environment(),
+                              stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                              stderr=subprocess.DEVNULL, timeout=5, check=False).returncode == 0
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+
+
 def status():
-    available = bool(executable())
-    configured = bool(api_key())
+    binary = executable()
+    available = bool(binary)
+    configured = bool(api_key()) or logged_in(binary)
     return dict(ocr=available and configured, engine='Codex CLI',
                 languages=['eng', 'chi_sim'], installed=available,
                 configured=configured, persistence='SQLite · 本机',
                 message=('Codex CLI 已配置 · 识别选区会发送给 OpenAI' if available and configured
-                         else '请安装 Codex CLI 并配置识别密钥；仍可手工录入'))
+                         else ('请先运行 codex login 登录；仍可手工录入' if available
+                               else '请安装 Codex CLI；仍可手工录入')))
 
 
 def command(binary, folder, lang):
@@ -95,11 +118,16 @@ def read_result(path):
 
 
 def recognize(png, lang='eng'):
+    return dict(text=run_structured(png, SCHEMA, PROMPT, read_result, lang),
+                engine='Codex CLI · OpenAI', confidence=None)
+
+
+def run_structured(png, schema, instructions, reader, lang='chi_sim+eng'):
     if lang not in ('eng', 'chi_sim+eng'):
         raise ValueError('不支持的 OCR 语言')
     binary = executable()
-    if not binary or not api_key():
-        raise ValueError('请安装 Codex CLI 并配置 EXAM_CODEX_API_KEY；也可手工录入')
+    if not binary:
+        raise ValueError('请安装 Codex CLI；也可手工录入')
     if not SLOTS.acquire(blocking=False):
         raise ValueError('识别请求较多，请稍后重试')
     try:
@@ -107,17 +135,11 @@ def recognize(png, lang='eng'):
         # directory outside the repository, removed on all normal/error exit paths.
         with tempfile.TemporaryDirectory(prefix='exam-codex-') as name:
             folder = Path(name)
-            home = folder / 'home'
-            home.mkdir(mode=0o700)
-            codex_home = home / '.codex'
-            codex_home.mkdir(mode=0o700)
             (folder / 'crop.png').write_bytes(png)
-            (folder / 'schema.json').write_text(json.dumps(SCHEMA), encoding='utf-8')
-            env = {key: os.environ[key] for key in ('PATH', 'SYSTEMROOT', 'WINDIR') if key in os.environ}
-            env.update(HOME=str(home), USERPROFILE=str(home), CODEX_HOME=str(codex_home),
-                       XDG_CONFIG_HOME=str(home / '.config'), TMPDIR=str(folder),
-                       TMP=str(folder), TEMP=str(folder), CODEX_API_KEY=api_key())
-            prompt = PROMPT + ('\nLanguage: English and numbers.' if lang == 'eng' else '\nLanguage: Chinese and English.')
+            (folder / 'schema.json').write_text(json.dumps(schema), encoding='utf-8')
+            env = cli_environment()
+            env.update(TMPDIR=str(folder), TMP=str(folder), TEMP=str(folder))
+            prompt = instructions + ('\nLanguage: English and numbers.' if lang == 'eng' else '\nLanguage: Chinese and English.')
             try:
                 with subprocess.Popen(command(binary, folder, lang), cwd=folder, env=env,
                                       stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
@@ -136,10 +158,10 @@ def recognize(png, lang='eng'):
                         process.communicate()
                         raise ValueError('Codex 识别超时，请缩小选区后重试') from None
                     if process.returncode:
-                        raise ValueError('Codex 识别失败，请检查 CLI 版本、密钥、额度和网络；可手工录入')
+                        raise ValueError('Codex 识别失败，请检查 CLI 版本、登录状态或密钥、额度和网络；可手工录入')
             except OSError:
                 raise ValueError('无法启动 Codex CLI，请检查安装和运行权限') from None
-            return dict(text=read_result(folder / 'result.json'), engine='Codex CLI · OpenAI', confidence=None)
+            return reader(folder / 'result.json')
     except OSError:
         raise ValueError('无法创建或清理识别临时文件，请检查临时目录权限') from None
     finally:

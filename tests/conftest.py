@@ -22,6 +22,10 @@ def fake_cli(tmp_path, monkeypatch):
     monkeypatch.setattr(codex_ocr.tempfile, 'tempdir', str(temp_root))
     monkeypatch.setenv('EXAM_CODEX_BIN', str(script))
     monkeypatch.setenv('EXAM_CODEX_API_KEY', 'synthetic-test-only-not-a-real-key')
+    login_home = tmp_path / 'login-home'
+    login_home.mkdir()
+    (login_home / 'login-marker').write_text('synthetic login')
+    monkeypatch.setenv('CODEX_HOME', str(login_home))
     monkeypatch.setenv('UNRELATED_SECRET', 'must-not-be-inherited')
     monkeypatch.setenv('OPENAI_BASE_URL', 'https://must-not-be-inherited.invalid')
 
@@ -43,11 +47,10 @@ assert not any('dangerously' in arg for arg in args)
 assert args.count('--image') == 1 and args[-1] == '-'
 folder = Path.cwd()
 assert Path(args[args.index('--cd')+1]) == folder
-assert Path(os.environ['HOME']).parent == folder
-assert Path(os.environ['CODEX_HOME']).parent == Path(os.environ['HOME'])
-assert not list(Path(os.environ['CODEX_HOME']).iterdir())
+assert Path(os.environ['HOME']) != folder
+assert (Path(os.environ['CODEX_HOME']) / 'login-marker').read_text() == 'synthetic login'
 assert 'UNRELATED_SECRET' not in os.environ and 'OPENAI_BASE_URL' not in os.environ
-assert os.environ['CODEX_API_KEY'] == 'synthetic-test-only-not-a-real-key'
+assert os.environ.get('CODEX_API_KEY') in (None, 'synthetic-test-only-not-a-real-key')
 image = Path(args[args.index('--image')+1])
 assert image.parent == folder and image.read_bytes().startswith(b'\\x89PNG')
 assert b'HEADER_PRIVATE' not in image.read_bytes()

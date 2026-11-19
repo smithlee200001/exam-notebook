@@ -75,6 +75,9 @@ def create_app(data_dir=None):
         return jsonify(error=str(exc)), 400
     @app.get('/')
     def index():
+        return app.send_static_file('bank.html')
+    @app.get('/single')
+    def single():
         return app.send_static_file('index.html')
     @app.get('/api/status')
     def status():
@@ -155,6 +158,8 @@ def create_app(data_dir=None):
         return response
     from practice import make_practice
     app.register_blueprint(make_practice(dbpath, ROOT / 'samples/exam.png'))
+    from bank import make_bank
+    app.register_blueprint(make_bank(dbpath))
     return app
 
 if __name__ == '__main__':

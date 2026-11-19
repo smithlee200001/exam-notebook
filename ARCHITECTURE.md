@@ -1,6 +1,44 @@
+# 多题题库与练习卷架构（当前首页）
+
+`浏览器图片 → POST /api/bank/extract → Codex CLI JSON Schema → 题目草稿数组 → 人工校对 → 独立题库 → 练习卷快照 → A4 浏览器打印`
+
+## 模块与数据
+
+- `bank.py`：拆题 schema、模型返回校验、图表坐标裁剪、题库和练习卷 API。
+- `codex_ocr.run_structured`：复用已有 CLI 参数、登录、只读环境、并发限制与超时清理；旧 `recognize` 仍返回单 text。
+- `static/bank.html / bank.js / bank.css`：导入校对、检索选题、排序留白和打印预览。文本以 DOM text node 输出，数学使用本地 KaTeX MathML。
+- `bank_question`：自增主键产生永久编号 Q000001；学科、题型、来源、JSON 内容和创建时间。
+- JSON 内容：原题号、知识点、警告、有序 blocks、choices、parts。blocks 包含 text/latex/image；图片块用 asset_id 引用图表。内联数学使用 `\(...\)`。
+- `bank_asset`：外键关联题目，PNG BLOB；保存题目与图表使用同一 SQLite 事务。
+- `worksheet`：标题及有序 items 快照；每个 item 含完整题目快照和留白行数。图表仍引用不可变 bank_asset，未来支持删除题目时必须保护练习卷引用。
+
+## API
+
+| 路由 | 功能 |
+| --- | --- |
+| POST `/api/bank/extract` | 图片二进制；返回 questions 草稿，不入库 |
+| POST `/api/bank/questions` | question、source、reviewed；保存一题并返回 id/number |
+| GET `/api/bank/questions` | 返回独立题库，由页面按类型、学科和关键词过滤 |
+| GET `/api/bank/assets/<id>` | 返回局部图表 PNG |
+| POST `/api/bank/worksheets` | title 和有序 items[{id,lines}]；校验所有题目存在、无重复后保存 |
+| GET `/api/bank/worksheets` | 已保存练习卷列表 |
+| GET `/api/bank/worksheets/<id>` | 读取试卷快照，用于再次预览与打印 |
+
+## 识别约束与取舍
+
+每次一张图，最多 60 道主问题，90 秒超时。图像与模型文本均不可信；沿用禁用 shell/tools 的固定 argv 调用。模型只转写，不解题，不执行图中文字指令。无法识别、裁切不完整或公共题干缺失要返回警告；共享题干应复制到依赖它的题目。图形以裁剪保真，不根据语言模型生成几何图。坐标按 EXIF 纠正后的整图计算。
+
+新流程允许将整页发送给 OpenAI；这与旧工作台的单题选区边界不同。上传前由使用者清除身份信息。原图不写业务数据库，只有确认的题目与图表持久化。现阶段不自动处理识别拆分错误、不自动去除图形上的手写答案，也不承诺自动识别准确率。
+
+练习卷编号属于布局，不改变题库永久编号。保留旧 SQLite 表与原文件；新版不依赖 PostgreSQL 参考 `schema.sql`，不自动迁移历史数据。后续可增加题目版本编辑、分页查询、多页导入和可控 PDF/DOCX 排版。
+
+---
+
+以下为历史单题工作台设计，描述旧 `/single` 页面及旧 API；与新首页冲突时以上述多题架构为准。
+
 # 当前默认路径：独立练习题
 
-整页照片只在浏览器内存中解码和预览。选区以原始二进制发送到 `/api/practice/ocr`，后端解码并清除元数据后，在私有临时目录调用隔离配置的 Codex CLI，将当前选区发送给 OpenAI。适配器使用 JSON schema 和最终消息文件，校验后仍返回 text/engine/confidence，保持原有人工整理和复核流程。临时图片和结果完成后清理，不写入业务数据目录；进程崩溃可能留下临时文件。详见 README 的配置与隐私边界。
+整页照片只在浏览器内存中解码和预览。选区以原始二进制发送到 `/api/practice/ocr`，后端解码并清除元数据后，在私有临时目录调用复用当前用户登录的 Codex CLI（忽略用户配置和规则），将当前选区发送给 OpenAI。适配器使用 JSON schema 和最终消息文件，校验后仍返回 text/engine/confidence，保持原有人工整理和复核流程。临时图片和结果完成后清理，不写入业务数据目录；进程崩溃可能留下临时文件。详见 README 的配置与隐私边界。
 
 SQLite 新增两张表（`practice.py` 自动初始化）：
 - `practice_question`：id/title/有序 blocks JSON/choices JSON/parts JSON/独立 answer 和 explanation/created_at。
