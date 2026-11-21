@@ -2,12 +2,29 @@
 'use strict';
 const $ = id => document.getElementById(id);
 const types = ['选择题', '填空题', '计算题', '解答题', '其他'];
-let drafts = [], current = 0, questions = [], selection = [], imageFile = null, imageURL = null, generation = 0, busy = false;
+let drafts = [], current = 0, questions = [], selection = [], pendingImage = null, generation = 0, busy = false;
 const message = text => { $('message').textContent = text; };
+function syncImageSelection() {
+  const preview = $('source-image');
+  if (pendingImage) preview.src = pendingImage.url;
+  else preview.removeAttribute('src');
+  preview.hidden = !pendingImage;
+  $('source-empty').hidden = !!pendingImage;
+  $('pending-image').textContent = pendingImage ? '待识别图片：' + pendingImage.file.name : '未选择待识别图片';
+  $('extract').disabled = busy || !pendingImage;
+}
+function clearImageSelection() {
+  const previous = pendingImage;
+  pendingImage = null;
+  $('file').value = '';
+  generation++;
+  syncImageSelection();
+  if (previous) URL.revokeObjectURL(previous.url);
+}
 function setImportBusy(value) {
   busy = value;
   for (const id of ['file', 'manual', 'demo', 'source']) $(id).disabled = value;
-  $('extract').disabled = value || !imageFile;
+  $('extract').disabled = value || !pendingImage;
   $('editor').inert = value;
   $('draft-nav').inert = value;
 }
@@ -98,7 +115,7 @@ function renderDraft() {
 }
 function crop(b) {
   const im=$('source-image'), [l,t,r,bt]=b.box;
-  if(!imageFile || !im.complete || !im.naturalWidth) throw Error('请先选择对应原图');
+  if(!pendingImage || !im.complete || !im.naturalWidth) throw Error('请先选择对应原图');
   if(b.box.length!==4 || !b.box.every(Number.isFinite) || !(0<=l&&l<r&&r<=1000&&0<=t&&t<bt&&bt<=1000)) throw Error('裁剪坐标无效');
   const x=Math.floor(l*im.naturalWidth/1000),y=Math.floor(t*im.naturalHeight/1000);
   const w=Math.ceil(r*im.naturalWidth/1000)-x,h=Math.ceil(bt*im.naturalHeight/1000)-y;
@@ -107,24 +124,40 @@ function crop(b) {
 }
 $('file').onchange=run(async()=>{
   if(busy)return;
-  const file=$('file').files[0];if(!file)return;
-  if(drafts.some(q=>!q.saved) && !confirm('更换图片会清除尚未保存的题目草稿，继续吗？'))return;
-  if(file.size>4*1024*1024)throw Error('图片不能超过 4 MB');
+  const file=$('file').files[0];
+  // 新选择不能继承上一张图的上传权，即使新图验证失败或更换被取消。
+  clearImageSelection();
+  if(!file){message('未选择待识别图片，已有草稿保留。');return;}
   setImportBusy(true);
-  const url=URL.createObjectURL(file), probe=new Image();
-  try {probe.src=url;await probe.decode();if(probe.naturalWidth*probe.naturalHeight>8000000)throw Error('图片不能超过 800 万像素');}
-  catch(e){URL.revokeObjectURL(url);throw e;}
-  finally {setImportBusy(false);}
-  generation++; if(imageURL)URL.revokeObjectURL(imageURL);imageURL=url;imageFile=file;
-  $('source-image').src=url;$('source-image').hidden=false;$('source-empty').hidden=true;$('source').value=file.name;
-  $('extract').disabled=busy;drafts=[];current=0;renderDraft();message('图片已就绪，点击识别开始拆题。');
+  let url;
+  try {
+    if(file.size>4*1024*1024)throw Error('图片不能超过 4 MB');
+    if(file.type && !['image/png','image/jpeg','image/webp'].includes(file.type))throw Error('请选择 PNG、JPEG 或 WebP 图片');
+    url=URL.createObjectURL(file);
+    const probe=new Image();
+    probe.src=url;
+    try {await probe.decode();} catch {throw Error('无法读取图片');}
+    if(!probe.naturalWidth || !probe.naturalHeight)throw Error('无法读取图片');
+    if(probe.naturalWidth*probe.naturalHeight>8000000)throw Error('图片不能超过 800 万像素');
+    if(drafts.some(q=>!q.saved) && !confirm('更换图片会清除尚未保存的题目草稿，继续吗？')){
+      message('已取消更换，已有草稿保留。请重新选择要识别的图片。');
+      return;
+    }
+    pendingImage={file,url};
+    $('source').value=file.name;
+    syncImageSelection();drafts=[];current=0;renderDraft();message('图片已就绪，点击识别开始拆题。');
+  } catch(e){message(e.message+'。已有草稿保留，请重新选择要识别的图片。');}
+  finally {
+    if(url && pendingImage?.url!==url)URL.revokeObjectURL(url);
+    setImportBusy(false);
+  }
 });
 $('extract').onclick=run(async()=>{
-  if(!imageFile||busy)return;
+  if(!pendingImage||busy)return;
   if(drafts.some(q=>!q.saved) && !confirm('重新识别会替换未保存草稿，继续吗？'))return;
-  const ticket=++generation;setImportBusy(true);
+  const file=pendingImage.file, ticket=++generation;setImportBusy(true);
   message('Codex 正在识别整张图片并拆题，请稍候…');
-  try {const result=await api('/api/bank/extract',{method:'POST',headers:{'Content-Type':'application/octet-stream'},body:imageFile});
+  try {const result=await api('/api/bank/extract',{method:'POST',headers:{'Content-Type':'application/octet-stream'},body:file});
     if(ticket!==generation)return;drafts=result.questions;current=0;renderDraft();message(`识别出 ${drafts.length} 道题，请逐题校对后入库。`);
   } finally {setImportBusy(false);}
 });
@@ -132,7 +165,7 @@ $('manual').onclick=()=>{if(busy)return;drafts.push(blank());current=drafts.leng
 $('demo').onclick=()=>{
   if(busy)return;
   if(drafts.some(q=>!q.saved)&&!confirm('演示会替换尚未保存的草稿，继续吗？'))return;
-  generation++;drafts=[{...blank(),kind:'选择题',source_number:'1',tags:['有理数'],blocks:[{type:'text',text:'下列各数中，最小的是（　）。'}],choices:['A. \\(-3\\)','B. 0','C. 2','D. 5']},{...blank(),kind:'填空题',source_number:'2',tags:['三角形内角和'],blocks:[{type:'text',text:'三角形两个内角分别为 \\(45^\\circ\\) 和 \\(65^\\circ\\)，第三个内角为 ______。'}]},{...blank(),source_number:'3',tags:['一元一次方程'],blocks:[{type:'text',text:'解下列方程：'},{type:'latex',text:'3x+5=20'}]}];current=0;
+  clearImageSelection();drafts=[{...blank(),kind:'选择题',source_number:'1',tags:['有理数'],blocks:[{type:'text',text:'下列各数中，最小的是（　）。'}],choices:['A. \\(-3\\)','B. 0','C. 2','D. 5']},{...blank(),kind:'填空题',source_number:'2',tags:['三角形内角和'],blocks:[{type:'text',text:'三角形两个内角分别为 \\(45^\\circ\\) 和 \\(65^\\circ\\)，第三个内角为 ______。'}]},{...blank(),source_number:'3',tags:['一元一次方程'],blocks:[{type:'text',text:'解下列方程：'},{type:'latex',text:'3x+5=20'}]}];current=0;
   $('source').value='合成演示 · 非真实识别';renderDraft();message('这是预置三题演示，不调用 Codex。校对保存后即可体验组卷。');
 };
 async function loadBank(){questions=await api('/api/bank/questions');renderBank();}
@@ -161,5 +194,5 @@ async function loadWorksheets(){const rows=await api('/api/bank/worksheets');$('
 $('compose').onclick=run(async()=>{$('compose').disabled=true;try {const result=await post('/api/bank/worksheets',{title:$('worksheet-title').value,items:selection});await openPaper(result.id);await loadWorksheets();message('练习卷已保存，可以打印或另存 PDF。');}finally{$('compose').disabled=!selection.length;}});
 $('print').onclick=()=>window.print();$('refresh').onclick=run(loadBank);
 for(const id of ['search','kind-filter','subject-filter'])$(id).oninput=renderBank;
-renderDraft();renderSelection();
+syncImageSelection();renderDraft();renderSelection();
 run(async()=>{await Promise.all([loadBank(),loadWorksheets(),api('/api/status').then(s=>{$('status').textContent=s.message;})]);})();
