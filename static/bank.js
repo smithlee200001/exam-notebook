@@ -1,6 +1,7 @@
 /* Model and user text is rendered as text nodes; only KaTeX creates math markup. */
 'use strict';
 const $ = id => document.getElementById(id);
+const geometryDrafts = new WeakMap();
 const types = ['选择题', '填空题', '计算题', '解答题', '其他'];
 let drafts = [], current = 0, questions = [], selection = [], pendingImage = null, generation = 0, busy = false;
 const message = text => { $('message').textContent = text; };
@@ -62,7 +63,8 @@ function rich(parent, text) {
 function renderQuestion(q, parent) {
   const body = node('div', undefined, 'question-body');
   for (const b of q.blocks) {
-    if (b.type === 'image') { const img = node('img'); img.alt = b.text; const src = b.asset_id ? '/api/bank/assets/'+encodeURIComponent(b.asset_id) : b.data; if(src) img.src=src; body.append(img); }
+    if (b.type === 'geometry') { try { body.append(Geometry.render(b)); } catch(e) {body.append(node('p',e.message,'warning'));} }
+    else if (b.type === 'image') { const img = node('img'); img.alt = b.text; const src = b.asset_id ? '/api/bank/assets/'+encodeURIComponent(b.asset_id) : b.data; if(src) img.src=src; body.append(img); }
     else if (b.type === 'latex') math(body,b.text,true);
     else { const p = node('p'); rich(p,b.text); body.append(p); }
   }
@@ -70,12 +72,16 @@ function renderQuestion(q, parent) {
   parent.append(body);
 }
 function blank() { return {source_number:'', subject:'数学', kind:'计算题', tags:[], blocks:[{type:'text',text:''}], choices:[], parts:[], warnings:[]}; }
+function applyGeometryDrafts(q) {
+  const blocks=q.blocks.map(b=>{if(b.type!=='geometry')return b;const raw=geometryDrafts.get(b);return Geometry.validate(raw===undefined?b:JSON.parse(raw));});
+  blocks.forEach((next,i)=>{const original=q.blocks[i];if(original.type==='geometry'){if(next!==original){for(const key of Object.keys(original))delete original[key];Object.assign(original,next);}geometryDrafts.delete(original);}});
+}
 function renderDraft() {
   $('draft-count').textContent = drafts.length; $('draft-nav').replaceChildren(); $('editor').replaceChildren();
   drafts.forEach((q,i) => { const b = button(q.saved ? `✓ ${q.saved}` : `题 ${i+1}`, () => {current=i;renderDraft();}); b.classList.toggle('active',i===current); $('draft-nav').append(b); });
   const q = drafts[current]; if (!q) { $('editor').append(node('p','识别后在这里逐题校对。')); return; }
   if (q.saved) { $('editor').append(node('p','已入库：'+q.saved)); renderQuestion(q,$('editor')); return; }
-  const editor = $('editor');
+  const editor = $('editor'), geometryControls=[];
   if (q.warnings.length) editor.append(node('p',q.warnings.join('；'),'warning'));
   field(editor,'原卷题号',q.source_number,v=>q.source_number=v);
   field(editor,'学科',q.subject,v=>q.subject=v);
@@ -85,9 +91,23 @@ function renderDraft() {
   field(editor,'知识点（逗号分隔）',q.tags.join('，'),v=>q.tags=v.split(/[,，]/).map(s=>s.trim()).filter(Boolean));
   q.blocks.forEach((b,i)=>{
     const box=node('div',undefined,'block-editor'), tools=node('div',undefined,'block-tools');
-    tools.append(node('strong',b.type==='image'?'图表':b.type==='latex'?'LaTeX 公式':'题面文字'));
+    tools.append(node('strong',b.type==='geometry'?'几何图形 · JSON → SVG':b.type==='image'?'图表':b.type==='latex'?'LaTeX 公式':'题面文字'));
     tools.append(button('↑',()=>{if(i){[q.blocks[i-1],q.blocks[i]]=[q.blocks[i],q.blocks[i-1]];renderDraft();}}),button('↓',()=>{if(i<q.blocks.length-1){[q.blocks[i+1],q.blocks[i]]=[q.blocks[i],q.blocks[i+1]];renderDraft();}}),button('移除',()=>{q.blocks.splice(i,1);renderDraft();}));box.append(tools);
-    field(box,b.type==='image'?'图表描述':'内容',b.text,v=>b.text=v,true);
+    if(b.type==='geometry'){
+      box.append(node('p','修改 points 坐标可调整图形，labels 可修改标注。修改后点击「更新题面预览」。坐标变化不会自动修改题目条件。','hint'));
+      const sizeLabel=node('label','图形宽度（占题目区域的百分比）','geometry-size'), slider=node('input'), output=node('output');
+      slider.type='range';slider.min='20';slider.max='100';slider.step='1';slider.value=b.display?.widthPercent??60;output.textContent=slider.value+'%';
+      slider.setAttribute('aria-label','图形宽度百分比');sizeLabel.append(slider,output);box.append(sizeLabel);
+      const localPreview=node('div',undefined,'geometry-size-preview');box.append(localPreview);
+      const details=node('details');details.append(node('summary','编辑几何 JSON'));box.append(details);
+      const input=field(details,'几何 JSON',geometryDrafts.get(b)??JSON.stringify(b,null,2),v=>geometryDrafts.set(b,v),true);input.className='geometry-editor';input.spellcheck=false;
+      geometryControls.push({block:b,slider,output,localPreview});
+      slider.oninput=()=>{
+        const review=$('draft-reviewed');if(review){review.checked=false;review.disabled=true;}
+        try{const next=JSON.parse(input.value);next.display={widthPercent:Number(slider.value)};Geometry.validate(next);geometryDrafts.set(b,JSON.stringify(next));input.value=JSON.stringify(next,null,2);updatePreview();}
+        catch(e){slider.value=b.display?.widthPercent??60;output.textContent=slider.value+'%';message('请先修正几何 JSON：'+e.message);}
+      };
+    } else field(box,b.type==='image'?'图表描述':'内容',b.text,v=>b.text=v,true);
     if (b.type === 'image') {
       const img=node('img');if(b.data)img.src=b.data;img.alt=b.text;box.append(img);
       field(box,'裁剪坐标：左、上、右、下（0～1000）',b.box.join(', '),v=>{b.box=v.split(/[,，]/).map(Number); delete b.data; img.removeAttribute('src');});
@@ -96,18 +116,20 @@ function renderDraft() {
     editor.append(box);
   });
   const tools=node('div',undefined,'toolbar');
-  for(const [type,label] of [['text','＋文字'],['latex','＋公式'],['image','＋图表']]) tools.append(button(label,()=>{q.blocks.push(type==='image'?{type,text:'图表',box:[0,0,1000,1000]}:{type,text:''});renderDraft();}));
+  for(const [type,label] of [['text','＋文字'],['latex','＋公式'],['image','＋图表'],['geometry','＋几何图']]) tools.append(button(label,()=>{q.blocks.push(type==='geometry'?createDemoQuestions()[0].blocks.find(b=>b.type==='geometry'):type==='image'?{type,text:'图表',box:[0,0,1000,1000]}:{type,text:''});renderDraft();}));
   editor.append(tools);
   field(editor,'选项（每行一项，可用 \\(公式\\)）',q.choices.join('\n'),v=>q.choices=lines(v),true);
   field(editor,'小问（每行一问）',q.parts.join('\n'),v=>q.parts=lines(v),true);
   const preview=node('div',undefined,'preview-box');
-  const updatePreview=()=>{preview.replaceChildren(node('h3','题面预览'));renderQuestion(q,preview);const review=$('draft-reviewed');if(review)review.disabled=false;};updatePreview();
+  const updatePreview=()=>{const review=$('draft-reviewed');try{applyGeometryDrafts(q);for(const control of geometryControls){control.slider.value=control.block.display.widthPercent;control.output.textContent=control.slider.value+'%';control.localPreview.replaceChildren(Geometry.render(control.block));}preview.replaceChildren(node('h3','题面预览'));renderQuestion(q,preview);if(review)review.disabled=false;}catch(e){preview.replaceChildren(node('p',e.message,'warning'));if(review){review.disabled=true;review.checked=false;}message('几何 JSON 无效，请修正后更新预览：'+e.message);}};
   editor.append(button('更新题面预览',updatePreview),preview);
   const checkLabel=node('label',undefined,'check'), check=node('input');check.type='checkbox';check.id='draft-reviewed';
+  updatePreview();
   checkLabel.append(check,document.createTextNode('已逐题校对：题面完整，分类、公式及图表正确，不含旧答案或个人信息'));editor.append(checkLabel);
   const save=button('保存这一题到题库',run(async()=>{
     if (busy || q.saved) return;
     if (!check.checked || check.disabled) throw Error('请先更新预览、完成校对并勾选确认');
+    applyGeometryDrafts(q);
     setImportBusy(true);save.disabled=true;
     try {const data=await post('/api/bank/questions',{question:q,source:$('source').value,reviewed:true});q.saved=data.number;renderDraft();message('已保存 '+data.number);await loadBank();}
     finally {setImportBusy(false);save.disabled=false;}
@@ -165,8 +187,8 @@ $('manual').onclick=()=>{if(busy)return;drafts.push(blank());current=drafts.leng
 $('demo').onclick=()=>{
   if(busy)return;
   if(drafts.some(q=>!q.saved)&&!confirm('演示会替换尚未保存的草稿，继续吗？'))return;
-  clearImageSelection();drafts=[{...blank(),kind:'选择题',source_number:'1',tags:['有理数'],blocks:[{type:'text',text:'下列各数中，最小的是（　）。'}],choices:['A. \\(-3\\)','B. 0','C. 2','D. 5']},{...blank(),kind:'填空题',source_number:'2',tags:['三角形内角和'],blocks:[{type:'text',text:'三角形两个内角分别为 \\(45^\\circ\\) 和 \\(65^\\circ\\)，第三个内角为 ______。'}]},{...blank(),source_number:'3',tags:['一元一次方程'],blocks:[{type:'text',text:'解下列方程：'},{type:'latex',text:'3x+5=20'}]}];current=0;
-  $('source').value='合成演示 · 非真实识别';renderDraft();message('这是预置三题演示，不调用 Codex。校对保存后即可体验组卷。');
+  clearImageSelection();drafts=createDemoQuestions();current=0;
+  $('source').value='几何排版示例 · 非真实识别';renderDraft();message('已加载三道几何示例：勾股定理、圆周角、矩形面积。图形由几何 JSON 实时生成 SVG，可修改坐标后更新预览，校对后入库组卷；不调用 Codex。');
 };
 async function loadBank(){questions=await api('/api/bank/questions');renderBank();}
 function renderBank(){

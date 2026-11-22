@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 160" width="560" height="160" role="img" aria-labelledby="title desc">
+<title id="title">三角形面积公式</title>
+<desc id="desc">S下标三角形等于二分之一乘以底b乘以高h。</desc>
+<rect width="560" height="160" fill="white"/>
+<g fill="#263d35" font-family="Times New Roman,serif">
+<text x="130" y="99" font-size="54" font-style="italic">S</text>
+<text x="161" y="113" font-size="27">△</text>
+<text x="207" y="99" font-size="48">=</text>
+<text x="285" y="66" text-anchor="middle" font-size="36">1</text>
+<path d="M263 81 H307" stroke="#263d35" stroke-width="2"/>
+<text x="285" y="122" text-anchor="middle" font-size="36">2</text>
+<text x="323" y="99" font-size="54" font-style="italic">bh</text>
+</g>
+</svg>

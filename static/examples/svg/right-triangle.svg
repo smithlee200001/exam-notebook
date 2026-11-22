@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 500" width="900" height="500" role="img" aria-labelledby="title desc">
+<title id="title">直角三角形</title><desc id="desc">A为直角，AB长8厘米，AC长6厘米，BC长x厘米。</desc>
+<style>
+.edge{fill:none;stroke:#263d35;stroke-width:3;stroke-linejoin:round;stroke-linecap:round}
+.aux{fill:none;stroke:#7b8b7f;stroke-width:2;stroke-dasharray:8 7}
+.label{fill:#263d35;font:26px Arial,sans-serif}
+</style>
+<rect width="900" height="500" fill="white"/>
+<path class="edge" d="M240 390 H640 L240 90 Z"/>
+<path class="edge" d="M240 365 H265 V390"/>
+<g class="label"><text x="207" y="425">A</text><text x="650" y="420">B</text><text x="210" y="75">C</text>
+<text x="420" y="440">8 cm</text><text x="140" y="250">6 cm</text><text x="460" y="235">x cm</text></g>
+</svg>

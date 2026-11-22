@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 500" width="900" height="500" role="img" aria-labelledby="title desc">
+<title id="title">圆周角</title><desc id="desc">圆O中AB为直径，C在上半圆，OC为虚线辅助半径，角CAB为35度。</desc>
+<style>
+.edge{fill:none;stroke:#263d35;stroke-width:3;stroke-linejoin:round;stroke-linecap:round}
+.aux{fill:none;stroke:#7b8b7f;stroke-width:2;stroke-dasharray:8 7}
+.label{fill:#263d35;font:26px Arial,sans-serif}
+</style>
+<rect width="900" height="500" fill="white"/>
+<circle class="edge" cx="450" cy="250" r="170"/>
+<path class="edge" d="M280 250 H620 L508.14 90.25 Z"/>
+<path class="aux" d="M450 250 L508.14 90.25"/>
+<circle cx="450" cy="250" r="4" fill="#263d35"/>
+<path class="edge" d="M330 250 A50 50 0 0 0 320.96 221.32"/>
+<g class="label"><text x="245" y="275">A</text><text x="635" y="270">B</text><text x="510" y="65">C</text><text x="440" y="290">O</text>
+<text x="345" y="238" font-size="21">35°</text></g>
+</svg>

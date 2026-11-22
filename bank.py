@@ -11,6 +11,7 @@ from flask import Blueprint, Response, jsonify, request
 from PIL import Image
 import codex_ocr
 from image_utils import clean_image
+from geometry import validate_geometry
 
 TYPES = ['选择题', '填空题', '计算题', '解答题', '其他']
 
@@ -71,8 +72,11 @@ def validate(q):
         raise ValueError('每题需要 1～100 个内容块')
     result['blocks'] = []
     for b in blocks:
-        if not isinstance(b, dict) or b.get('type') not in ('text', 'latex', 'image'):
+        if not isinstance(b, dict) or b.get('type') not in ('text', 'latex', 'image', 'geometry'):
             raise ValueError('内容块格式错误')
+        if b['type'] == 'geometry':
+            result['blocks'].append(validate_geometry(b))
+            continue
         block = {'type': b['type'], 'text': string(b.get('text', ''))}
         if block['type'] != 'image' and not block['text']:
             raise ValueError('题面内容不能为空')

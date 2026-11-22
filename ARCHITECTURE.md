@@ -4,13 +4,17 @@
 
 ## 模块与数据
 
+完整字段字典、快照结构及数据约束见 [数据库设计说明](DATABASE.md)。
+
 - `bank.py`：拆题 schema、模型返回校验、图表坐标裁剪、题库和练习卷 API。
 - `codex_ocr.run_structured`：结构化 CLI 调用、登录环境、沙箱配置、并发限制与超时清理。
+- `geometry.schema.json / geometry.py`：几何块 v1 的格式及引用校验。
+- `static/geometry.js`：浏览器校验、受限 SVG 渲染，支持几何 JSON 编辑预览。
 - `image_utils.py`：验证图片格式、体积、像素数，纠正 EXIF 方向并清除元数据。
 - `app.py`：应用入口、本机访问限制、状态接口及题库路由注册。
 - `static/bank.html / bank.js / bank.css`：导入校对、检索选题、排序留白和打印预览。文本以 DOM text node 输出，数学使用本地 KaTeX MathML。
 - `bank_question`：自增主键产生永久编号 Q000001；学科、题型、来源、JSON 内容和创建时间。
-- JSON 内容：原题号、知识点、警告、有序 blocks、choices、parts。blocks 包含 text/latex/image；图片块用 asset_id 引用图表。内联数学使用 `\(...\)`。
+- JSON 内容：原题号、知识点、警告、有序 blocks、choices、parts。blocks 包含 text/latex/image/geometry；图片块用 asset_id 引用图表。内联数学使用 `\(...\)`。
 - `bank_asset`：外键关联题目，PNG BLOB；保存题目与图表使用同一 SQLite 事务。
 - `worksheet`：标题及有序 items 快照；每个 item 含完整题目快照和留白行数。图表仍引用不可变 bank_asset，未来支持删除题目时必须保护练习卷引用。
 

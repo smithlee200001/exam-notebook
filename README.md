@@ -9,7 +9,7 @@ source .venv/bin/activate
 python app.py
 ```
 
-打开 http://127.0.0.1:8765 。首次安装请使用 Python 3.12+ 创建虚拟环境，并执行 `python -m pip install -r requirements.txt`。没有 CLI 也能用首页「体验三题演示」或手工录入验证整个入库和组卷流程。
+打开 http://127.0.0.1:8765 。首次安装请使用 Python 3.12+ 创建虚拟环境，并执行 `python -m pip install -r requirements.txt`。没有 CLI 也能用首页「体验几何三题示例」或手工录入验证整个入库和组卷流程。
 
 ## 本机无沙箱运行
 
@@ -21,6 +21,10 @@ EXAM_CODEX_BIN=/opt/homebrew/bin/codex EXAM_CODEX_SANDBOX=danger-full-access .ve
 
 `EXAM_CODEX_SANDBOX` 未设置时仍为 `read-only`；`danger-full-access` 表示该 CLI 子进程不受沙箱隔离。继续禁用模型工具调用。CLI 在本机运行，图像识别仍通过 OpenAI 云服务完成。
 
+## 几何题显示示例
+
+首页点击「体验几何三题示例」，即可预览直角三角形、圆周角与矩形阴影面积三题，包含公式、SVG 图形和小问。图形以几何 JSON 存储，可修改坐标后更新预览；可逐题保存并组卷，不调用 Codex。题面、图形及核对答案见 [几何示例说明](EXAMPLES.md)。
+
 ## 新版流程
 
 1. 选择整页或部分试卷（PNG/JPEG/WebP，4 MB、800 万像素以内）。点击识别会把**所选整张图片**发送给 OpenAI；先自行去除姓名、学号等信息。照片不写入业务数据库。页面会显示当前待识别文件名。替换图片失败或取消确认时，清除待识别图片并保留已有草稿；需重新选择图片才能识别。进入离线演示也会清除待识别图片，不调用 Codex。
@@ -30,6 +34,8 @@ EXAM_CODEX_BIN=/opt/homebrew/bin/codex EXAM_CODEX_SANDBOX=danger-full-access .ve
 5. 选多道题，调整顺序、作答留白和卷名，保存练习卷。卷内按 1、2、3… 编号；可重新打开、浏览器打印或另存 PDF。打印使用 A4 样式，长题的跨页效果需在浏览器打印预览中检查。
 
 ## 数据与范围
+
+表结构、字段解释、JSON 示例、事务与查询方法见 [数据库设计说明](DATABASE.md)。
 
 - SQLite 只使用 `bank_question`、`bank_asset`、`worksheet` 三张业务表；练习卷保存所选题目的内容快照和行数。
 - 识别草稿在浏览器内存中，刷新即丢失；已保存题目和试卷可跨重启恢复。原图仅在 CLI 临时目录中处理，正常结束清理；程序崩溃时不保证即时清理。
@@ -58,6 +64,7 @@ EXAM_CODEX_BIN=/opt/homebrew/bin/codex EXAM_CODEX_SANDBOX=danger-full-access .ve
 python -m pip install -r requirements-lock.txt
 python -m pytest -q -rs
 node --check static/bank.js
+node --check static/geometry.js
 node --test tests/*.cjs
 ```
 
