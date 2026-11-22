@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parent
 def create_app(data_dir=None):
     app = Flask(__name__, static_folder='static')
     app.config['MAX_CONTENT_LENGTH'] = 12 * 1024 * 1024
-    data = Path(data_dir or os.environ.get('EXAM_DATA_DIR', ROOT / 'data'))
+    data = Path(data_dir or os.environ.get('EXAM_DATA_DIR', ROOT / 'data' / 'blocks-v2'))
     data.mkdir(parents=True, exist_ok=True)
     dbpath = data / 'notebook.sqlite3'
 

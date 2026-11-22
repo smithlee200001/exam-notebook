@@ -4,11 +4,6 @@
     "type": {
       "const": "geometry"
     },
-    "text": {
-      "type": "string",
-      "maxLength": 500,
-      "pattern": "^[^\\u0000]*$"
-    },
     "version": {
       "const": 1
     },
@@ -114,8 +109,7 @@
         "required": [
           "id",
           "from",
-          "to",
-          "dashed"
+          "to"
         ],
         "additionalProperties": false
       },
@@ -147,8 +141,7 @@
         "required": [
           "id",
           "center",
-          "radius",
-          "dashed"
+          "radius"
         ],
         "additionalProperties": false
       },
@@ -280,8 +273,7 @@
             "required": [
               "type",
               "segment",
-              "value",
-              "unit"
+              "value"
             ],
             "additionalProperties": false
           },
@@ -315,22 +307,35 @@
     "display": {
       "type": "object",
       "properties": {
+        "align": {
+          "enum": [
+            "left",
+            "center"
+          ]
+        },
         "widthPercent": {
           "type": "integer",
           "minimum": 20,
-          "maximum": 100,
-          "default": 60
+          "maximum": 100
         }
       },
-      "required": [
-        "widthPercent"
-      ],
+      "required": [],
       "additionalProperties": false
+    },
+    "alt": {
+      "type": "string",
+      "maxLength": 20000,
+      "pattern": "^[^\\u0000]*$"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "pattern": "^[A-Za-z][A-Za-z0-9_-]*$"
     }
   },
   "required": [
     "type",
-    "text",
     "version",
     "coordinateSystem",
     "viewBox",
@@ -340,7 +345,9 @@
     "polygons",
     "labels",
     "rightAngles",
-    "givens"
+    "givens",
+    "id",
+    "alt"
   ],
   "additionalProperties": false,
   "$schema": "https://json-schema.org/draft/2020-12/schema",

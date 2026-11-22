@@ -1,39 +1,51 @@
-# 多题题库与练习卷架构（当前首页）
+# 当前实现结构
 
-`浏览器图片 → POST /api/bank/extract → Codex CLI JSON Schema → 题目草稿数组 → 人工校对 → 独立题库 → 练习卷快照 → A4 浏览器打印`
+## 主要模块
 
-## 模块与数据
+| 文件 | 职责 |
+|---|---|
+| `app.py` | 本机访问限制、错误处理、数据目录与应用启动 |
+| `bank.py` | 识别、题目保存和查询、资产读取、组卷快照 |
+| `content.py` / `blocks.schema.json` | 新版 Block 数据格式与语义校验 |
+| `geometry.py` / `geometry.schema.json` | 几何坐标和引用校验 |
+| `assets.py` | 图片传输解码、PNG 规范化、SVG 白名单校验 |
+| `codex_ocr.py` | 隔离 CLI 调用、超时与临时文件清理 |
+| `static/blocks.js` | 所有页面共用的递归内容渲染、公式、图表 SVG |
+| `static/geometry.js` | 几何 SVG 渲染 |
+| `static/bank.js` | 递归编辑器、上传、预览校验、题库与组卷交互 |
+| `scripts/generate_examples.py` | 生成 16 道示例 JSON 与浏览器数据 |
 
-完整字段字典、快照结构及数据约束见 [数据库设计说明](DATABASE.md)。
+## 内容链路
 
-- `bank.py`：拆题 schema、模型返回校验、图表坐标裁剪、题库和练习卷 API。
-- `codex_ocr.run_structured`：结构化 CLI 调用、登录环境、沙箱配置、并发限制与超时清理。
-- `geometry.schema.json / geometry.py`：几何块 v1 的格式及引用校验。
-- `static/geometry.js`：浏览器校验、受限 SVG 渲染，支持几何 JSON 编辑预览。
-- `image_utils.py`：验证图片格式、体积、像素数，纠正 EXIF 方向并清除元数据。
-- `app.py`：应用入口、本机访问限制、状态接口及题库路由注册。
-- `static/bank.html / bank.js / bank.css`：导入校对、检索选题、排序留白和打印预览。文本以 DOM text node 输出，数学使用本地 KaTeX MathML。
-- `bank_question`：自增主键产生永久编号 Q000001；学科、题型、来源、JSON 内容和创建时间。
-- JSON 内容：原题号、知识点、警告、有序 blocks、choices、parts。blocks 包含 text/latex/image/geometry；图片块用 asset_id 引用图表。内联数学使用 `\(...\)`。
-- `bank_asset`：外键关联题目，PNG BLOB；保存题目与图表使用同一 SQLite 事务。
-- `worksheet`：标题及有序 items 快照；每个 item 含完整题目快照和留白行数。图表仍引用不可变 bank_asset，未来支持删除题目时必须保护练习卷引用。
+识别结果或手工草稿 → 编辑器 → 更新预览并调用 `/api/bank/validate` → 人工校对 → 题目与递归资产同事务保存 → 题库读取 → 练习卷快照 → 共用渲染器显示及打印。
+
+文字、填空与图标连续排列，图片、图表和组容器独立显示。简单选项、小问、单元格可转换成组合内容；只有一个文字子块时可简化回来。几何和图表结构使用 JSON 编辑，显示宽度提供滑块。
+
+滑块即时更新预览，但修改后需要重新通过预览校验并勾选确认。异步校验不能批准提交后又被编辑的旧快照。保存中禁用编辑、导入和重复提交。
 
 ## API
 
-| 路由 | 功能 |
-| --- | --- |
-| POST `/api/bank/extract` | 图片二进制；返回 questions 草稿，不入库 |
-| POST `/api/bank/questions` | question、source、reviewed；保存一题并返回 id/number |
-| GET `/api/bank/questions` | 返回独立题库，由页面按类型、学科和关键词过滤 |
-| GET `/api/bank/assets/<id>` | 返回局部图表 PNG |
-| POST `/api/bank/worksheets` | title 和有序 items[{id,lines}]；校验所有题目存在、无重复后保存 |
-| GET `/api/bank/worksheets` | 已保存练习卷列表 |
-| GET `/api/bank/worksheets/<id>` | 读取试卷快照，用于再次预览与打印 |
+| 方法与路径 | 作用 |
+|---|---|
+| `GET /api/status` | 本机 CLI 可用性 |
+| `POST /api/bank/extract` | 接收原图二进制，返回新版题目草稿及临时资产 |
+| `POST /api/bank/validate` | 校验题目结构，返回补齐类型默认值后的内容 |
+| `POST /api/bank/assets/validate` | 校验上传图片，返回规范化 MIME 和 Base64 |
+| `POST /api/bank/questions` | 接收 `question/assets/source/reviewed`，保存新题 |
+| `GET /api/bank/questions` | 读取题库 |
+| `GET /api/bank/assets/<id>` | 读取资产 |
+| `POST /api/bank/worksheets` | 按选题顺序创建快照 |
+| `GET /api/bank/worksheets` | 读取练习卷列表 |
+| `GET /api/bank/worksheets/<id>` | 读取快照 |
 
-## 识别约束与取舍
+## 识别传输与正式格式
 
-每次一张图，最多 60 道主问题，90 秒超时。图像与模型文本均不可信；沿用禁用 shell/tools 的固定 argv 调用。模型只转写，不解题，不执行图中文字指令。无法识别、裁切不完整或公共题干缺失要返回警告；共享题干应复制到依赖它的题目。图形以裁剪保真，不根据语言模型生成几何图。坐标按 EXIF 纠正后的整图计算。
+CLI 的结构化输出使用必填可空字段来表达不同节点；不适用字段返回 null。服务端去掉传输中的 null 后，使用正式 Block Schema 校验。这个识别传输结构不是旧数据兼容层。
 
-识别会将用户所选整张图片发送给 OpenAI。上传前由使用者清除身份信息。原图不写业务数据库，只有确认的题目与图表持久化。现阶段不自动处理识别拆分错误、不自动去除图形上的手写答案，也不承诺自动识别准确率。
+图形识别使用 `image.assetId`，裁剪坐标独立放在输出的 `crops` 中。服务端递归查找所有层级的图片并附上裁剪后的临时资产。坐标不进入最终图片 Block。识别不根据图片臆造几何坐标或统计数据。
 
-练习卷编号属于布局，不改变题库永久编号。运行时仅使用三张 SQLite 业务表，不提供历史数据兼容或迁移逻辑。后续可增加题目版本编辑、分页查询、多页导入和可控 PDF/DOCX 排版。
+## 范围与限制
+
+13 种类型使用新版字段，不维护旧 `choices/parts/latex` 逻辑。默认采用独立的 `data/blocks-v2`，原数据库不迁移或删除。设计文档中的后续统一规则不作为本轮实现要求。
+
+没有答案判分、已入库题目编辑删除、表格合并或嵌套表格、图表堆叠/缺失值/双纵轴。几何标签为纯文字。测试使用假 CLI，不代表真实识别准确率或当前账号网络、额度已验证。

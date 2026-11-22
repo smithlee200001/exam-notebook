@@ -21,13 +21,13 @@ def marked_png():
 
 def test_saved_bank_asset_strips_metadata_and_rolls_back_invalid_question(tmp_path):
     client = create_app(tmp_path).test_client()
-    question = dict(subject='数学', kind='解答题', blocks=[dict(
-        type='image', text='几何图', box=[0, 0, 1000, 1000],
-        data='data:image/png;base64,' + base64.b64encode(marked_png()).decode())])
-    payload = dict(question=question, reviewed=True)
+    question = dict(schemaVersion=2, sourceNumber='', tags=[], warnings=[], subject='数学', kind='解答题', blocks=[dict(
+        id='image_1', type='image', version=1, assetId='asset_1', alt='几何图')])
+    payload = dict(question=question, reviewed=True, assets={'asset_1': {
+        'mimeType':'image/png', 'content':base64.b64encode(marked_png()).decode()}})
     assert client.post('/api/bank/questions', json=payload).status_code == 201
     block = client.get('/api/bank/questions').json[0]['blocks'][0]
-    raw = client.get('/api/bank/assets/' + block['asset_id']).data
+    raw = client.get('/api/bank/assets/' + block['assetId']).data
     assert b'HEADER_PRIVATE' not in raw
     assert Image.open(io.BytesIO(raw)).size == (80, 60)
     question['blocks'].append(dict(type='unknown'))

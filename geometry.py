@@ -22,7 +22,11 @@ def validate_geometry(block):
                 finite(v)
     block = copy.deepcopy(block)
     if isinstance(block, dict) and 'display' not in block:
-        block['display'] = {'widthPercent': 60}
+        block['display'] = {'widthPercent': 60, 'align': 'center'}
+    for key in ('segments', 'circles', 'polygons', 'labels', 'rightAngles', 'givens'):
+        block.setdefault(key, [])
+    for element in block['segments'] + block['circles']:
+        element.setdefault('dashed', False)
     finite(block)
     error = next(VALIDATOR.iter_errors(block), None)
     if error:

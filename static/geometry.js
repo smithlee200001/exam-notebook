@@ -12,12 +12,16 @@ const Geometry = (() => {
       if(!v||typeof v!=='object'||Array.isArray(v)||Object.keys(v).length!==keys.length||keys.some(k=>!Object.hasOwn(v,k)))fail('字段缺失或包含未知字段');
     };
     const array = (v,min=0,max=100) => {if(!Array.isArray(v)||v.length<min||v.length>max)fail('数组长度无效');};
-    if(g && typeof g==='object' && !Object.hasOwn(g,'display'))g={...g,display:{widthPercent:60}};
-    object(g,['display','type','text','version','coordinateSystem','viewBox','points','segments','circles','polygons','labels','rightAngles','givens']);
+    g=JSON.parse(JSON.stringify(g));
+    for(const key of ['segments','circles','polygons','labels','rightAngles','givens'])g[key]??=[];
+    for(const e of [...g.segments,...g.circles])e.dashed??=false;
+    g.display={align:'center',widthPercent:60,...g.display};
+    object(g,['id','display','type','alt','version','coordinateSystem','viewBox','points','segments','circles','polygons','labels','rightAngles','givens']);
     if(g.type!=='geometry'||g.version!==1||g.coordinateSystem!=='screen')fail('不支持的类型、版本或坐标系');
-    object(g.display,['widthPercent']);
+    object(g.display,['widthPercent','align']);
+    if(!['left','center'].includes(g.display.align))fail('对齐无效');
     if(!Number.isInteger(g.display.widthPercent)||g.display.widthPercent<20||g.display.widthPercent>100)fail('显示宽度必须是 20～100 的整数百分比');
-    text(g.text);array(g.viewBox,4,4);g.viewBox.forEach(number);if(g.viewBox[2]<=0||g.viewBox[3]<=0)fail('画布尺寸必须为正数');
+    text(g.alt);array(g.viewBox,4,4);g.viewBox.forEach(number);if(g.viewBox[2]<=0||g.viewBox[3]<=0)fail('画布尺寸必须为正数');
     if(!g.points||typeof g.points!=='object'||Array.isArray(g.points))fail('points 必须是对象');
     const entries=Object.entries(g.points);if(!entries.length||entries.length>100)fail('点数量无效');
     for(const [key,p] of entries){if(!name(key))fail('点 ID 无效');object(p,['x','y','label','dx','dy']);[p.x,p.y,p.dx,p.dy].forEach(number);text(p.label);}
@@ -32,7 +36,7 @@ const Geometry = (() => {
     for(const l of g.labels){object(l,['x','y','text']);number(l.x);number(l.y);text(l.text);}
     for(const a of g.rightAngles){object(a,['vertex','arms','size']);array(a.arms,2,2);distinct(a.vertex,a.arms[0]);distinct(a.vertex,a.arms[1]);if(a.arms[0]===a.arms[1]||!finite(a.size)||a.size<1||a.size>100)fail('角标无效');}
     for(const v of g.givens){
-      if(v.type==='length'){object(v,['type','segment','value','unit']);if(!segments.has(v.segment)||!finite(v.value)||v.value<=0||!['mm','cm','m'].includes(v.unit))fail('长度条件无效');}
+      if(v.type==='length'){object(v,Object.hasOwn(v,'unit')?['type','segment','value','unit']:['type','segment','value']);if(!segments.has(v.segment)||!finite(v.value)||v.value<=0||(v.unit!==undefined&&!['mm','cm','m'].includes(v.unit)))fail('长度条件无效');}
       else if(v.type==='perpendicular'){object(v,['type','segments']);array(v.segments,2,2);if(v.segments[0]===v.segments[1]||v.segments.some(s=>!segments.has(s)))fail('垂直条件无效');}
       else fail('不支持的已知条件');
     }
@@ -41,8 +45,8 @@ const Geometry = (() => {
   function render(data) {
     const g=validate(data);
     const el=(tag,attrs={},text)=>{const n=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))n.setAttribute(k,String(v));if(text!==undefined)n.textContent=text;return n;};
-    const svg=el('svg',{viewBox:g.viewBox.join(' '),class:'geometry-diagram',style:`width:${g.display.widthPercent}%`,role:'img','aria-label':g.text||'几何示意图',xmlns:NS});
-    svg.append(el('title',{},g.text||'几何示意图'));
+    const svg=el('svg',{viewBox:g.viewBox.join(' '),class:'geometry-diagram',style:`width:${g.display.widthPercent}%;margin-left:${g.display.align==='left'?'0':'auto'};margin-right:auto`,role:'img','aria-label':g.alt||'几何示意图',xmlns:NS});
+    svg.append(el('title',{},g.alt||'几何示意图'));
     const [x,y,w,h]=g.viewBox;svg.append(el('rect',{x,y,width:w,height:h,fill:'white'}));
     const stroke={fill:'none',stroke:'#263d35','stroke-width':3,'stroke-linejoin':'round','stroke-linecap':'round'};
     const p=id=>g.points[id];

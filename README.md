@@ -9,7 +9,7 @@ source .venv/bin/activate
 python app.py
 ```
 
-打开 http://127.0.0.1:8765 。首次安装请使用 Python 3.12+ 创建虚拟环境，并执行 `python -m pip install -r requirements.txt`。没有 CLI 也能用首页「体验几何三题示例」或手工录入验证整个入库和组卷流程。
+打开 http://127.0.0.1:8765 。首次安装请使用 Python 3.12+ 创建虚拟环境，并执行 `python -m pip install -r requirements.txt`。没有 CLI 也能用首页「体验 16 题示例」或手工录入验证整个入库和组卷流程。
 
 ## 本机无沙箱运行
 
@@ -21,16 +21,16 @@ EXAM_CODEX_BIN=/opt/homebrew/bin/codex EXAM_CODEX_SANDBOX=danger-full-access .ve
 
 `EXAM_CODEX_SANDBOX` 未设置时仍为 `read-only`；`danger-full-access` 表示该 CLI 子进程不受沙箱隔离。继续禁用模型工具调用。CLI 在本机运行，图像识别仍通过 OpenAI 云服务完成。
 
-## 几何题显示示例
+## 题型显示示例
 
-首页点击「体验几何三题示例」，即可预览直角三角形、圆周角与矩形阴影面积三题，包含公式、SVG 图形和小问。图形以几何 JSON 存储，可修改坐标后更新预览；可逐题保存并组卷，不调用 Codex。题面、图形及核对答案见 [几何示例说明](EXAMPLES.md)。
+首页点击「体验 16 题示例」，可验证单空、多空、单选、多选、小问、表格、PNG/SVG 图片、柱状图、折线图、几何图和提示图标。每道题均可编辑、保存和组卷，不调用 Codex。题面及核对答案见 [示例说明](EXAMPLES.md)，数据格式见 [Block 设计](BLOCK_DESIGN.md)。
 
 ## 新版流程
 
 1. 选择整页或部分试卷（PNG/JPEG/WebP，4 MB、800 万像素以内）。点击识别会把**所选整张图片**发送给 OpenAI；先自行去除姓名、学号等信息。照片不写入业务数据库。页面会显示当前待识别文件名。替换图片失败或取消确认时，清除待识别图片并保留已有草稿；需重新选择图片才能识别。进入离线演示也会清除待识别图片，不调用 Codex。
 2. Codex 通过 JSON Schema 返回题目数组。按主问题拆分，小问留在同一题；分类含选择题、填空题、计算题、解答题和其他。学科、知识点、原卷题号可校对。
-3. 文字、LaTeX 公式、图表组成有序内容块。选项与小问支持 `\(公式\)` 内联数学；图表从原图裁剪，坐标采用全图 0～1000 的左、上、右、下。可修改坐标重新裁剪，预览后逐题确认入库。不完整或模糊内容会提示人工补全；不要把模型分类或裁剪当作已验证结果。
-4. 每道题获得永久编号，如 `Q000001`，与原卷题号独立。题库可按题型、学科、编号、题干、来源和知识点检索。图表作为 PNG BLOB 与题目同事务保存。
+3. 文字与 LaTeX 共用 text，填空为 blank，选项和小问使用嵌套 Block；图表从原图裁剪，坐标采用全图 0～1000 的左、上、右、下。可修改坐标重新裁剪，预览后逐题确认入库。不完整或模糊内容会提示人工补全；不要把模型分类或裁剪当作已验证结果。
+4. 每道题获得永久编号，如 `Q000001`，与原卷题号独立。题库可按题型、学科、编号、题干、来源和知识点检索。图片作为 PNG 或经校验的 SVG BLOB，与题目同事务保存。
 5. 选多道题，调整顺序、作答留白和卷名，保存练习卷。卷内按 1、2、3… 编号；可重新打开、浏览器打印或另存 PDF。打印使用 A4 样式，长题的跨页效果需在浏览器打印预览中检查。
 
 ## 数据与范围
@@ -54,7 +54,7 @@ EXAM_CODEX_BIN=/opt/homebrew/bin/codex EXAM_CODEX_SANDBOX=danger-full-access .ve
 
 ## 本地数据
 
-默认存储在 `data/notebook.sqlite3`，可用 `EXAM_DATA_DIR` 指定数据目录。停止程序后备份数据目录。应用仅监听 `127.0.0.1`，当前没有多用户认证和数据加密。
+默认存储在 `data/blocks-v2/notebook.sqlite3`，可用 `EXAM_DATA_DIR` 指定数据目录。旧的 `data/notebook.sqlite3` 不变，新版不读取旧格式。指定自定义目录时请使用空目录或已有新版数据库。停止程序后备份数据目录。应用仅监听 `127.0.0.1`，当前没有多用户认证和数据加密。
 
 项目只维护当前题库与组卷流程，不提供旧版数据迁移或兼容接口。启动不会执行旧表清理或删除已有磁盘文件；需要全新数据库时可指定新的 `EXAM_DATA_DIR`。
 
@@ -65,6 +65,7 @@ python -m pip install -r requirements-lock.txt
 python -m pytest -q -rs
 node --check static/bank.js
 node --check static/geometry.js
+node --check static/blocks.js
 node --test tests/*.cjs
 ```
 

@@ -27,7 +27,7 @@ def fake_cli(tmp_path, monkeypatch):
     monkeypatch.setenv('UNRELATED_SECRET', 'must-not-be-inherited')
     monkeypatch.setenv('OPENAI_BASE_URL', 'https://must-not-be-inherited.invalid')
 
-    def configure(mode='ok', output='{"questions":[]}'):
+    def configure(mode='ok', output='{"questions":[],"crops":[]}'):
         script.write_text('#!' + sys.executable + '\n' + '''
 import json, os, sys, time
 from pathlib import Path
@@ -53,7 +53,7 @@ image = Path(args[args.index('--image')+1])
 assert image.parent == folder and image.read_bytes().startswith(b'\\x89PNG')
 assert b'HEADER_PRIVATE' not in image.read_bytes()
 schema = json.loads(Path(args[args.index('--output-schema')+1]).read_text())
-assert schema['additionalProperties'] is False and schema['required'] == ['questions']
+assert schema['additionalProperties'] is False and schema['required'] == ['questions', 'crops']
 prompt = sys.stdin.read()
 assert 'untrusted data' in prompt and 'Do not use' in prompt
 ''' + '\nmode = ' + repr(mode) + '\noutput = ' + repr(output) + '''

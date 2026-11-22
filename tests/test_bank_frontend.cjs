@@ -10,7 +10,7 @@ async function setup() {
   let nextURL = 0, confirmResult = true;
   function element(tag) {
     let id = '';
-    return {tag, value:'', textContent:'', children:[], style:{}, files:[], checked:false, disabled:false,
+    return {tag, tagName:tag.toUpperCase(), value:'', textContent:'', children:[], style:{setProperty(k,v){this[k]=v;}}, files:[], checked:false, disabled:false,
       classList:{toggle(){}},
       get id(){return id;}, set id(value){id=value;elements.set(value,this);},
       append(...children){this.children.push(...children);},
@@ -42,6 +42,7 @@ async function setup() {
   });
   const run = code => vm.runInContext(code,context);
   run(fs.readFileSync(path.join(__dirname,'../static/geometry.js'),'utf8'));
+  run(fs.readFileSync(path.join(__dirname,'../static/blocks.js'),'utf8'));
   run(fs.readFileSync(path.join(__dirname,'../static/demo.js'),'utf8'));
   run(fs.readFileSync(path.join(__dirname,'../static/bank.js'),'utf8'));await flush();
   const all = root => [root,...root.children.flatMap(child=>child.children?all(child):[child])];
@@ -50,30 +51,6 @@ async function setup() {
   return {el,run,requests,find,all,pick,objectURLs,revoked,setConfirm(value){confirmResult=value;}};
 }
 const image = (name,options={}) => ({name,size:100,type:'image/png',...options});
-
-test('saving freezes draft and source, prevents duplicate writes, and unlocks after failure',async()=>{
-  const h=await setup();h.el('demo').onclick();h.el('draft-reviewed').checked=true;
-  const save=h.find('保存这一题到题库'), pending=save.onclick();
-  assert.equal(h.requests.length,1);assert.equal(h.el('editor').inert,true);
-  assert.equal(h.el('file').disabled,true);assert.equal(h.el('source').disabled,true);
-  await save.onclick();assert.equal(h.requests.length,1);
-  const original=h.run('drafts.length');h.el('manual').onclick();assert.equal(h.run('drafts.length'),original);
-  h.requests[0].finish({error:'save failed'},false);await pending;
-  assert.equal(h.el('editor').inert,false);assert.equal(h.el('file').disabled,false);
-  assert.equal(h.el('message').textContent,'save failed');assert.equal(h.run('drafts[0].saved'),undefined);
-});
-
-test('changed content must be previewed and reviewed before saving',async()=>{
-  const h=await setup();h.el('demo').onclick();h.el('draft-reviewed').checked=true;
-  const input=h.all(h.el('editor')).find(e=>e.tag==='textarea');input.value='修改题干';input.oninput();
-  assert.equal(h.el('draft-reviewed').disabled,true);assert.equal(h.el('draft-reviewed').checked,false);
-  await h.find('保存这一题到题库').onclick();assert.equal(h.requests.length,0);
-  h.find('更新题面预览').onclick();assert.equal(h.el('draft-reviewed').disabled,false);
-  h.el('draft-reviewed').checked=true;const pending=h.find('保存这一题到题库').onclick();
-  assert.equal(JSON.parse(h.requests[0].body).question.blocks[0].text,'修改题干');
-  h.requests[0].finish({number:'Q000001'});await pending;
-  assert.equal(h.run('drafts[0].saved'),'Q000001');
-});
 
 test('extraction holds draft controls and restores them on CLI failure',async()=>{
   const h=await setup();await h.pick(image('a.png'));const pending=h.el('extract').onclick();
@@ -117,7 +94,7 @@ test('switching to the offline demo drops the old upload and preview',async()=>{
   assert.equal(h.el('source-image').hidden,true);
   assert.equal(h.el('extract').disabled,true);
   assert.deepEqual(h.revoked,[oldURL]);
-  assert.equal(h.run('drafts.length'),3);
+  assert.equal(h.run('drafts.length'),16);
   await h.el('extract').onclick();assert.equal(h.requests.length,0);
 });
 
@@ -156,59 +133,39 @@ test('worksheet request preserves selected order and answer space',async()=>{
 });
 
 
-test('geometry demos render SVG and reset edited drafts',async()=>{
-  const h=await setup();h.el('demo').onclick();
-  const qs=JSON.parse(h.run('JSON.stringify(drafts)'));
-  assert.equal(qs.length,3);
-  for(const q of qs){assert.ok(q.blocks.some(b=>b.type==='latex'));assert.ok(q.blocks.some(b=>b.type==='geometry'));assert.equal(q.parts.length,2);}
-  assert.ok(h.all(h.el('editor')).some(e=>e.tag==='svg'));
-  h.run("drafts[0].blocks[0].text='edited';drafts[0].saved='Q000001'");
-  h.el('demo').onclick();
-  assert.notEqual(h.run('drafts[0].blocks[0].text'),'edited');
-  assert.equal(h.run('drafts[0].saved'),undefined);
-  assert.equal(h.requests.length,0);
-});
 
-test('geometry JSON edits require a valid preview and repeated edits save the latest coordinates',async()=>{
-  const h=await setup();h.el('demo').onclick();
-  const input=h.all(h.el('editor')).find(e=>e.className==='geometry-editor');
-  const original=JSON.parse(input.value);
-  input.value='{broken';input.oninput();h.find('更新题面预览').onclick();
-  assert.equal(h.el('draft-reviewed').disabled,true);
-  h.el('draft-reviewed').checked=true;await h.find('保存这一题到题库').onclick();assert.equal(h.requests.length,0);
-  original.points.B.x=650;input.value=JSON.stringify(original);input.oninput();h.find('更新题面预览').onclick();
-  assert.equal(h.el('draft-reviewed').disabled,false);
-  original.points.B.x=660;input.value=JSON.stringify(original);input.oninput();h.find('更新题面预览').onclick();
-  h.el('draft-reviewed').checked=true;const pending=h.find('保存这一题到题库').onclick();
-  const q=JSON.parse(h.requests[0].body).question;
-  assert.equal(q.blocks.find(b=>b.type==='geometry').points.B.x,660);
-  assert.equal(q.blocks.find(b=>b.type==='geometry').data,undefined);
-  h.requests[0].finish({number:'Q000001'});await pending;
+async function preview(h){const pending=h.find('更新题面预览').onclick();const req=h.requests[h.requests.length-1];assert.equal(req.url,'/api/bank/validate');req.finish(JSON.parse(req.body));await pending;}
+test('saving requires validated preview, freezes editor, and recovers from failure',async()=>{
+ const h=await setup();h.el('demo').onclick();h.el('draft-reviewed').checked=true;
+ await h.find('保存这一题到题库').onclick();assert.equal(h.requests.length,0);
+ await preview(h);h.el('draft-reviewed').checked=true;
+ const pending=h.find('保存这一题到题库').onclick();assert.equal(h.el('editor').inert,true);
+ await h.find('保存这一题到题库').onclick();assert.equal(h.requests.length,2);
+ const req=h.requests[1];assert.equal(req.url,'/api/bank/questions');assert.equal(JSON.parse(req.body).question.schemaVersion,2);
+ req.finish({error:'save failed'},false);await pending;assert.equal(h.el('editor').inert,false);assert.equal(h.el('message').textContent,'save failed');
 });
-
-test('width slider previews live, clears review and saves the latest percentage',async()=>{
-  const h=await setup();h.el('demo').onclick();
-  const slider=h.all(h.el('editor')).find(e=>e.type==='range');
-  assert.equal(Number(slider.value),60);
-  h.el('draft-reviewed').checked=true;
-  slider.value='35';slider.oninput();
-  assert.equal(h.el('draft-reviewed').checked,false);
-  assert.equal(h.el('draft-reviewed').disabled,false);
-  assert.ok(h.all(h.el('editor')).filter(e=>e.tag==='svg').every(e=>e.style==='width:35%'));
-  const input=h.all(h.el('editor')).find(e=>e.className==='geometry-editor');
-  assert.equal(JSON.parse(input.value).display.widthPercent,35);
-  slider.value='80';slider.oninput();
-  h.el('draft-reviewed').checked=true;
-  const pending=h.find('保存这一题到题库').onclick();
-  assert.equal(JSON.parse(h.requests[0].body).question.blocks.find(b=>b.type==='geometry').display.widthPercent,80);
-  h.requests[0].finish({number:'Q000001'});await pending;
+test('edits during validation cannot approve stale content',async()=>{
+ const h=await setup();h.el('demo').onclick();const pending=h.find('更新题面预览').onclick();
+ const input=h.all(h.el('editor')).find(e=>e.tag==='textarea');input.value='新题干';input.oninput();h.requests[0].finish({});await pending;
+ assert.equal(h.el('draft-reviewed').disabled,true);await preview(h);assert.equal(h.el('draft-reviewed').disabled,false);
 });
-
-test('slider does not discard invalid JSON edits',async()=>{
-  const h=await setup();h.el('demo').onclick();
-  const input=h.all(h.el('editor')).find(e=>e.className==='geometry-editor');
-  const slider=h.all(h.el('editor')).find(e=>e.type==='range');
-  input.value='{invalid';input.oninput();slider.value='40';slider.oninput();
-  assert.equal(input.value,'{invalid');assert.equal(Number(slider.value),60);
-  assert.equal(h.el('draft-reviewed').disabled,true);assert.equal(h.requests.length,0);
+test('nested geometry slider preserves raw data and saved percentage',async()=>{
+ const h=await setup();h.el('demo').onclick();h.run('current=13;renderDraft()');
+ const slider=h.all(h.el('editor')).find(e=>e.type==='range');slider.value='35';slider.oninput();
+ const raw=h.all(h.el('editor')).find(e=>e.className==='geometry-editor');assert.equal(JSON.parse(raw.value).display.widthPercent,35);
+ await preview(h);h.el('draft-reviewed').checked=true;const pending=h.find('保存这一题到题库').onclick();
+ const req=h.requests[1];assert.equal(JSON.parse(req.body).question.blocks[1].children[0].children[0].display.widthPercent,35);
+ req.finish({number:'Q000001'});await pending;
+});
+test('invalid raw JSON is kept and blocks review',async()=>{
+ const h=await setup();h.el('demo').onclick();h.run('current=11;renderDraft()');
+ const raw=h.all(h.el('editor')).find(e=>e.className==='geometry-editor');raw.value='{broken';raw.oninput();await h.find('更新题面预览').onclick();
+ assert.equal(h.requests.length,0);assert.equal(h.el('draft-reviewed').disabled,true);assert.equal(raw.value,'{broken');
+});
+test('all 16 examples render, with structural blanks, table and correct choice labels',async()=>{
+ const h=await setup();h.el('demo').onclick();
+ for(let i=0;i<16;i++)h.run(`$('paper').replaceChildren();renderQuestion(drafts[${i}],$('paper'))`);
+ h.run("$('paper').replaceChildren();renderQuestion(drafts[1],$('paper'))");assert.equal(h.all(h.el('paper')).filter(e=>e.className==='answer-blank').length,3);
+ h.run("$('paper').replaceChildren();renderQuestion(drafts[2],$('paper'))");assert.deepEqual(h.all(h.el('paper')).filter(e=>e.className==='item-number').map(e=>e.textContent),['A.','B.','C.','D.']);
+ h.run("$('paper').replaceChildren();renderQuestion(drafts[7],$('paper'))");assert.equal(h.all(h.el('paper')).filter(e=>e.tag==='table').length,1);
 });
