@@ -92,11 +92,7 @@ def test_invalid_model_coordinates_rejected(tmp_path, box):
 
 
 def test_structured_cli_end_to_end_and_temporary_cleanup(tmp_path, fake_cli):
-    import os
-    from pathlib import Path
     temporary = fake_cli(output=json.dumps({'questions': [question()]}))
-    script = Path(os.environ['EXAM_CODEX_BIN'])
-    script.write_text(script.read_text().replace("schema['required'] == ['text']", "schema['required'] == ['questions']"))
     c = create_app(tmp_path / 'data').test_client()
     response = c.post('/api/bank/extract', data=png(), content_type='application/octet-stream')
     assert response.status_code == 200

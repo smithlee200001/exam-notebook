@@ -10,7 +10,7 @@ import uuid
 from flask import Blueprint, Response, jsonify, request
 from PIL import Image
 import codex_ocr
-from practice import clean_image
+from image_utils import clean_image
 
 TYPES = ['选择题', '填空题', '计算题', '解答题', '其他']
 
