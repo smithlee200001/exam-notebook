@@ -63,15 +63,22 @@ def status():
     configured = bool(api_key()) or logged_in(binary)
     return dict(ocr=available and configured, engine='Codex CLI',
                 languages=['eng', 'chi_sim'], installed=available,
-                configured=configured, persistence='SQLite · 本机',
+                configured=configured, persistence='SQLite · 本机', sandbox=sandbox_mode(),
                 message=('Codex CLI 已配置 · 识别选区会发送给 OpenAI' if available and configured
                          else ('请先运行 codex login 登录；仍可手工录入' if available
                                else '请安装 Codex CLI；仍可手工录入')))
 
 
+def sandbox_mode():
+    mode = os.environ.get('EXAM_CODEX_SANDBOX', 'read-only')
+    if mode not in ('read-only', 'danger-full-access'):
+        raise ValueError('EXAM_CODEX_SANDBOX 只支持 read-only 或 danger-full-access')
+    return mode
+
+
 def command(binary, folder, lang):
     args = [binary, 'exec', '--skip-git-repo-check', '--ephemeral',
-            '--ignore-user-config', '--ignore-rules', '--sandbox', 'read-only',
+            '--ignore-user-config', '--ignore-rules', '--sandbox', sandbox_mode(),
             '--color', 'never', '--cd', str(folder),
             '--image', str(folder / 'crop.png'),
             '--output-schema', str(folder / 'schema.json'),

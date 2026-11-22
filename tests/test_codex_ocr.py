@@ -115,3 +115,13 @@ def test_status_checks_local_login_without_key(fake_cli, monkeypatch, returncode
         return SimpleNamespace(returncode=returncode)
     monkeypatch.setattr(codex_ocr.subprocess, 'run', run)
     assert codex_ocr.status()['ocr'] is expected
+
+
+def test_explicit_local_unsandboxed_mode(monkeypatch, tmp_path):
+    monkeypatch.setenv('EXAM_CODEX_SANDBOX', 'danger-full-access')
+    args = codex_ocr.command('/local/codex', tmp_path, 'eng')
+    assert args[args.index('--sandbox') + 1] == 'danger-full-access'
+    assert 'features.shell_tool=false' in args
+    monkeypatch.setenv('EXAM_CODEX_SANDBOX', 'invalid')
+    with pytest.raises(ValueError, match='EXAM_CODEX_SANDBOX'):
+        codex_ocr.command('/local/codex', tmp_path, 'eng')

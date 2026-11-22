@@ -11,6 +11,16 @@ python app.py
 
 打开 http://127.0.0.1:8765 。首次安装依赖参见下方旧版启动说明。Codex CLI 登录和安全配置沿用现有适配器；没有 CLI 也能用首页「体验三题演示」或手工录入验证整个入库和组卷流程。
 
+## 本机无沙箱运行
+
+显式使用本机 Codex CLI、已有登录，并关闭识别子进程的沙箱：
+
+```sh
+EXAM_CODEX_BIN=/opt/homebrew/bin/codex EXAM_CODEX_SANDBOX=danger-full-access .venv/bin/python app.py
+```
+
+`EXAM_CODEX_SANDBOX` 未设置时仍为 `read-only`；`danger-full-access` 表示该 CLI 子进程不受沙箱隔离。继续禁用模型工具调用。CLI 在本机运行，图像识别仍通过 OpenAI 云服务完成。
+
 ## 新版流程
 
 1. 选择整页或部分试卷（PNG/JPEG/WebP，4 MB、800 万像素以内）。点击识别会把**所选整张图片**发送给 OpenAI；先自行去除姓名、学号等信息。照片不写入业务数据库。页面会显示当前待识别文件名。替换图片失败或取消确认时，清除待识别图片并保留已有草稿；需重新选择图片才能识别。进入离线演示也会清除待识别图片，不调用 Codex。
