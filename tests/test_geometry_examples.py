@@ -25,7 +25,7 @@ def test_generated_examples_match_sources():
     lambda g:g['givens'][0].update(value=-1),
 ])
 def test_geometry_validation(change):
-    q=examples()[11];change(q['blocks'][1])
+    q=examples()[11];q.pop('answer');change(q['blocks'][1])
     with pytest.raises(ValueError):validate(q)
 
 

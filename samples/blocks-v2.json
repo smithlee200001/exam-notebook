@@ -29,7 +29,27 @@
         "text": "。",
         "id": "q1_b3"
       }
-    ]
+    ],
+    "answer": {
+      "schemaVersion": 1,
+      "entries": [
+        {
+          "target": "block",
+          "targetId": "q1_b2",
+          "type": "fill",
+          "text": "7",
+          "alternatives": [],
+          "explanation": [
+            {
+              "id": "a1_1_explain",
+              "type": "text",
+              "version": 1,
+              "text": "3 与 4 相加，得到 7。"
+            }
+          ]
+        }
+      ]
+    }
   },
   {
     "schemaVersion": 2,
@@ -89,7 +109,57 @@
         "text": "。",
         "id": "q2_b7"
       }
-    ]
+    ],
+    "answer": {
+      "schemaVersion": 1,
+      "entries": [
+        {
+          "target": "block",
+          "targetId": "q2_b2",
+          "type": "fill",
+          "text": "9",
+          "alternatives": [],
+          "explanation": [
+            {
+              "id": "a2_1_explain",
+              "type": "text",
+              "version": 1,
+              "text": "\\((-3)^2=(-3)\\times(-3)=9\\)。"
+            }
+          ]
+        },
+        {
+          "target": "block",
+          "targetId": "q2_b4",
+          "type": "fill",
+          "text": "7",
+          "alternatives": [],
+          "explanation": [
+            {
+              "id": "a2_2_explain",
+              "type": "text",
+              "version": 1,
+              "text": "\\(7^2=49\\)，所以算术平方根为7。"
+            }
+          ]
+        },
+        {
+          "target": "block",
+          "targetId": "q2_b6",
+          "type": "fill",
+          "text": "5",
+          "alternatives": [],
+          "explanation": [
+            {
+              "id": "a2_3_explain",
+              "type": "text",
+              "version": 1,
+              "text": "绝对值表示到原点的距离，结果为5。"
+            }
+          ]
+        }
+      ]
+    }
   },
   {
     "schemaVersion": 2,
@@ -142,7 +212,28 @@
         ],
         "id": "q3_b2"
       }
-    ]
+    ],
+    "answer": {
+      "schemaVersion": 1,
+      "entries": [
+        {
+          "target": "block",
+          "targetId": "q3_b2",
+          "type": "choice",
+          "optionIds": [
+            "q3_b4"
+          ],
+          "explanation": [
+            {
+              "id": "a3_1_explain",
+              "type": "text",
+              "version": 1,
+              "text": "\\(\\frac{1}{2}=0.5\\)。"
+            }
+          ]
+        }
+      ]
+    }
   },
   {
     "schemaVersion": 2,
@@ -195,7 +286,30 @@
         ],
         "id": "q4_b2"
       }
-    ]
+    ],
+    "answer": {
+      "schemaVersion": 1,
+      "entries": [
+        {
+          "target": "block",
+          "targetId": "q4_b2",
+          "type": "choice",
+          "optionIds": [
+            "q4_b3",
+            "q4_b4",
+            "q4_b6"
+          ],
+          "explanation": [
+            {
+              "id": "a4_1_explain",
+              "type": "text",
+              "version": 1,
+              "text": "2、3、5都只有1和自身两个正因数，4还有因数2。"
+            }
+          ]
+        }
+      ]
+    }
   },
   {
     "schemaVersion": 2,
@@ -253,7 +367,48 @@
         ],
         "id": "q5_b2"
       }
-    ]
+    ],
+    "answer": {
+      "schemaVersion": 1,
+      "entries": [
+        {
+          "target": "block",
+          "targetId": "q5_b3",
+          "type": "solution",
+          "blocks": [
+            {
+              "id": "a5_1_solution",
+              "type": "text",
+              "version": 1,
+              "text": "先理解题意，确定运算，再计算并检查结果。"
+            }
+          ],
+          "explanation": [
+            {
+              "id": "a5_1_explain",
+              "type": "text",
+              "version": 1,
+              "text": "这是开放式表达，方法合理即可。"
+            }
+          ]
+        },
+        {
+          "target": "block",
+          "targetId": "q5_b6",
+          "type": "fill",
+          "text": "7",
+          "alternatives": [],
+          "explanation": [
+            {
+              "id": "a5_2_explain",
+              "type": "text",
+              "version": 1,
+              "text": "\\(3+4=7\\)。"
+            }
+          ]
+        }
+      ]
+    }
   },
   {
     "schemaVersion": 2,
@@ -355,7 +510,58 @@
         ],
         "id": "q6_b2"
       }
-    ]
+    ],
+    "answer": {
+      "schemaVersion": 1,
+      "entries": [
+        {
+          "target": "block",
+          "targetId": "q6_b5",
+          "type": "choice",
+          "optionIds": [
+            "q6_b7"
+          ],
+          "explanation": [
+            {
+              "id": "a6_1_explain",
+              "type": "text",
+              "version": 1,
+              "text": "4能被2整除，是偶数；3是奇数。"
+            }
+          ]
+        },
+        {
+          "target": "block",
+          "targetId": "q6_b10",
+          "type": "fill",
+          "text": "1",
+          "alternatives": [],
+          "explanation": [
+            {
+              "id": "a6_2_explain",
+              "type": "text",
+              "version": 1,
+              "text": "示例答案；奇数不能被2整除。两个空可填写其他符合题意的奇数，本版不自动判分。"
+            }
+          ]
+        },
+        {
+          "target": "block",
+          "targetId": "q6_b12",
+          "type": "fill",
+          "text": "3",
+          "alternatives": [],
+          "explanation": [
+            {
+              "id": "a6_3_explain",
+              "type": "text",
+              "version": 1,
+              "text": "示例答案；也可填写5、7等奇数，应结合整个小问人工核对。"
+            }
+          ]
+        }
+      ]
+    }
   },
   {
     "schemaVersion": 2,
@@ -414,6 +620,31 @@
         "mimeType": "image/svg+xml",
         "content": "PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMDAgMTkwIj48cmVjdCB4PSI0MCIgeT0iMzAiIHdpZHRoPSIyMjAiIGhlaWdodD0iMTIwIiBmaWxsPSIjZTRlZWU2IiBzdHJva2U9IiMzNDVkNDYiIHN0cm9rZS13aWR0aD0iMyIvPjx0ZXh0IHg9IjE1MCIgeT0iMTc4IiBmb250LXNpemU9IjIwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj44IGNtPC90ZXh0Pjx0ZXh0IHg9IjYiIHk9IjkwIiBmb250LXNpemU9IjE4Ij40PC90ZXh0Pjwvc3ZnPg=="
       }
+    },
+    "answer": {
+      "schemaVersion": 1,
+      "entries": [
+        {
+          "target": "question",
+          "type": "solution",
+          "blocks": [
+            {
+              "id": "a7_1_solution",
+              "type": "text",
+              "version": 1,
+              "text": "\\(a=7\\)，\\(S=32\\)。"
+            }
+          ],
+          "explanation": [
+            {
+              "id": "a7_1_explain",
+              "type": "text",
+              "version": 1,
+              "text": "\\(3+4=7\\)；矩形面积为\\(8\\times4=32\\)。本题也用于比较公式布局。"
+            }
+          ]
+        }
+      ]
     }
   },
   {
@@ -537,7 +768,42 @@
         ],
         "id": "q8_b2"
       }
-    ]
+    ],
+    "answer": {
+      "schemaVersion": 1,
+      "entries": [
+        {
+          "target": "block",
+          "targetId": "q8_b11",
+          "type": "fill",
+          "text": "7",
+          "alternatives": [],
+          "explanation": [
+            {
+              "id": "a8_1_explain",
+              "type": "text",
+              "version": 1,
+              "text": "\\(3+4=7\\)。"
+            }
+          ]
+        },
+        {
+          "target": "block",
+          "targetId": "q8_b16",
+          "type": "fill",
+          "text": "12",
+          "alternatives": [],
+          "explanation": [
+            {
+              "id": "a8_2_explain",
+              "type": "text",
+              "version": 1,
+              "text": "\\(3\\times4=12\\)。"
+            }
+          ]
+        }
+      ]
+    }
   },
   {
     "schemaVersion": 2,
@@ -682,6 +948,41 @@
         "mimeType": "image/png",
         "content": "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"
       }
+    },
+    "answer": {
+      "schemaVersion": 1,
+      "entries": [
+        {
+          "target": "block",
+          "targetId": "q9_b11",
+          "type": "fill",
+          "text": "\\(ab\\)",
+          "alternatives": [],
+          "explanation": [
+            {
+              "id": "a9_1_explain",
+              "type": "text",
+              "version": 1,
+              "text": "空格前已经有S=，此空填写长乘宽。"
+            }
+          ]
+        },
+        {
+          "target": "block",
+          "targetId": "q9_b16",
+          "type": "fill",
+          "text": "\\(S=\\pi r^2\\)",
+          "alternatives": [],
+          "explanation": [
+            {
+              "id": "a9_2_explain",
+              "type": "text",
+              "version": 1,
+              "text": "圆的面积等于圆周率乘以半径的平方。"
+            }
+          ]
+        }
+      ]
     }
   },
   {
@@ -812,7 +1113,57 @@
         ],
         "id": "q10_b3"
       }
-    ]
+    ],
+    "answer": {
+      "schemaVersion": 1,
+      "entries": [
+        {
+          "target": "block",
+          "targetId": "q10_b6",
+          "type": "fill",
+          "text": "4",
+          "alternatives": [],
+          "explanation": [
+            {
+              "id": "a10_1_explain",
+              "type": "text",
+              "version": 1,
+              "text": "第四组有9人，比其他三组都多。"
+            }
+          ]
+        },
+        {
+          "target": "block",
+          "targetId": "q10_b10",
+          "type": "fill",
+          "text": "28",
+          "alternatives": [],
+          "explanation": [
+            {
+              "id": "a10_2_explain",
+              "type": "text",
+              "version": 1,
+              "text": "\\(6+8+5+9=28\\)。"
+            }
+          ]
+        },
+        {
+          "target": "block",
+          "targetId": "q10_b12",
+          "type": "fill",
+          "text": "7",
+          "alternatives": [],
+          "explanation": [
+            {
+              "id": "a10_3_explain",
+              "type": "text",
+              "version": 1,
+              "text": "平均人数为\\(28\\div4=7\\)。"
+            }
+          ]
+        }
+      ]
+    }
   },
   {
     "schemaVersion": 2,
@@ -896,7 +1247,54 @@
         ],
         "id": "q11_b3"
       }
-    ]
+    ],
+    "answer": {
+      "schemaVersion": 1,
+      "entries": [
+        {
+          "target": "block",
+          "targetId": "q11_b4",
+          "type": "solution",
+          "blocks": [
+            {
+              "id": "a11_1_solution",
+              "type": "text",
+              "version": 1,
+              "text": "第二组。"
+            }
+          ],
+          "explanation": [
+            {
+              "id": "a11_1_explain",
+              "type": "text",
+              "version": 1,
+              "text": "各组男生人数为3、5、2、4，最大值5对应第二组。"
+            }
+          ]
+        },
+        {
+          "target": "block",
+          "targetId": "q11_b5",
+          "type": "solution",
+          "blocks": [
+            {
+              "id": "a11_2_solution",
+              "type": "text",
+              "version": 1,
+              "text": "第一组。"
+            }
+          ],
+          "explanation": [
+            {
+              "id": "a11_2_explain",
+              "type": "text",
+              "version": 1,
+              "text": "第一组男生、女生均为3人，其余各组人数不同。"
+            }
+          ]
+        }
+      ]
+    }
   },
   {
     "schemaVersion": 2,
@@ -1045,7 +1443,139 @@
         ],
         "id": "q12_b3"
       }
-    ]
+    ],
+    "answer": {
+      "schemaVersion": 1,
+      "entries": [
+        {
+          "target": "block",
+          "targetId": "q12_b6",
+          "type": "fill",
+          "text": "5",
+          "alternatives": [],
+          "explanation": [
+            {
+              "id": "a12_1_explain",
+              "type": "text",
+              "version": 1,
+              "text": "由勾股定理，\\(BC=\\sqrt{4^2+3^2}=5\\)。"
+            }
+          ]
+        },
+        {
+          "target": "block",
+          "targetId": "q12_b8",
+          "type": "solution",
+          "blocks": [
+            {
+              "id": "a12_2_solution",
+              "type": "text",
+              "version": 1,
+              "text": "\\(S=\\frac{1}{2}\\times4\\times3=6\\)。"
+            }
+          ],
+          "explanation": [
+            {
+              "id": "a12_2_explain",
+              "type": "text",
+              "version": 1,
+              "text": "两条直角边相互垂直，可分别作为底与高。"
+            },
+            {
+              "type": "geometry",
+              "version": 1,
+              "alt": "直角三角形 ABC，AB=4，AC=3",
+              "coordinateSystem": "screen",
+              "viewBox": [
+                0,
+                0,
+                320,
+                260
+              ],
+              "display": {
+                "align": "center",
+                "widthPercent": 40
+              },
+              "points": {
+                "A": {
+                  "x": 60,
+                  "y": 200,
+                  "label": "A",
+                  "dx": -18,
+                  "dy": 18
+                },
+                "B": {
+                  "x": 260,
+                  "y": 200,
+                  "label": "B",
+                  "dx": 8,
+                  "dy": 18
+                },
+                "C": {
+                  "x": 60,
+                  "y": 50,
+                  "label": "C",
+                  "dx": -18,
+                  "dy": -8
+                }
+              },
+              "segments": [
+                {
+                  "id": "AB",
+                  "from": "A",
+                  "to": "B"
+                },
+                {
+                  "id": "AC",
+                  "from": "A",
+                  "to": "C"
+                },
+                {
+                  "id": "BC",
+                  "from": "B",
+                  "to": "C"
+                }
+              ],
+              "rightAngles": [
+                {
+                  "vertex": "A",
+                  "arms": [
+                    "B",
+                    "C"
+                  ],
+                  "size": 12
+                }
+              ],
+              "labels": [
+                {
+                  "x": 160,
+                  "y": 225,
+                  "text": "4"
+                },
+                {
+                  "x": 35,
+                  "y": 125,
+                  "text": "3"
+                }
+              ],
+              "givens": [
+                {
+                  "type": "length",
+                  "segment": "AB",
+                  "value": 4
+                },
+                {
+                  "type": "length",
+                  "segment": "AC",
+                  "value": 3
+                }
+              ],
+              "id": "a12_geometry"
+            }
+          ]
+        }
+      ]
+    }
   },
   {
     "schemaVersion": 2,
@@ -1132,6 +1662,38 @@
         "mimeType": "image/png",
         "content": "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"
       }
+    },
+    "answer": {
+      "schemaVersion": 1,
+      "entries": [
+        {
+          "target": "block",
+          "targetId": "q13_b2",
+          "type": "choice",
+          "optionIds": [
+            "q13_b3"
+          ],
+          "explanation": [
+            {
+              "id": "a13_1_explain",
+              "type": "text",
+              "version": 1,
+              "text": "图一有四条边且四个角都是直角，是矩形；图二是圆。"
+            },
+            {
+              "id": "a13_image",
+              "type": "image",
+              "version": 1,
+              "assetId": "asset_svg",
+              "alt": "正确选项中的矩形",
+              "display": {
+                "align": "left",
+                "widthPercent": 40
+              }
+            }
+          ]
+        }
+      ]
     }
   },
   {
@@ -1283,6 +1845,27 @@
         "mimeType": "image/png",
         "content": "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"
       }
+    },
+    "answer": {
+      "schemaVersion": 1,
+      "entries": [
+        {
+          "target": "block",
+          "targetId": "q14_b2",
+          "type": "choice",
+          "optionIds": [
+            "q14_b3"
+          ],
+          "explanation": [
+            {
+              "id": "a14_1_explain",
+              "type": "text",
+              "version": 1,
+              "text": "图一的A点附近有小方角标记，表示直角。"
+            }
+          ]
+        }
+      ]
     }
   },
   {
@@ -1338,7 +1921,27 @@
         "text": "。",
         "id": "q15_b6"
       }
-    ]
+    ],
+    "answer": {
+      "schemaVersion": 1,
+      "entries": [
+        {
+          "target": "block",
+          "targetId": "q15_b5",
+          "type": "fill",
+          "text": "0.33",
+          "alternatives": [],
+          "explanation": [
+            {
+              "id": "a15_1_explain",
+              "type": "text",
+              "version": 1,
+              "text": "\\(\\frac{1}{3}=0.333\\ldots\\)，保留两位小数得到0.33。"
+            }
+          ]
+        }
+      ]
+    }
   },
   {
     "schemaVersion": 2,
@@ -1628,6 +2231,63 @@
         ],
         "id": "q16_b24"
       }
-    ]
+    ],
+    "answer": {
+      "schemaVersion": 1,
+      "entries": [
+        {
+          "target": "block",
+          "targetId": "q16_b27",
+          "type": "choice",
+          "optionIds": [
+            "q16_b30"
+          ],
+          "explanation": [
+            {
+              "id": "a16_1_explain",
+              "type": "text",
+              "version": 1,
+              "text": "第二组共有\\(5+3=8\\)人。"
+            }
+          ]
+        },
+        {
+          "target": "block",
+          "targetId": "q16_b34",
+          "type": "fill",
+          "text": "14",
+          "alternatives": [],
+          "explanation": [
+            {
+              "id": "a16_2_explain",
+              "type": "text",
+              "version": 1,
+              "text": "女生总人数为\\(3+3+3+5=14\\)。"
+            }
+          ]
+        },
+        {
+          "target": "block",
+          "targetId": "q16_b36",
+          "type": "solution",
+          "blocks": [
+            {
+              "id": "a16_3_solution",
+              "type": "text",
+              "version": 1,
+              "text": "第一组男生和女生人数相等。"
+            }
+          ],
+          "explanation": [
+            {
+              "id": "a16_3_explain",
+              "type": "text",
+              "version": 1,
+              "text": "开放题，可写其他由图表支持的结论，例如第四组女生最多。"
+            }
+          ]
+        }
+      ]
+    }
   }
 ]

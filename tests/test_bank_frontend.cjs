@@ -43,6 +43,7 @@ async function setup() {
   const run = code => vm.runInContext(code,context);
   run(fs.readFileSync(path.join(__dirname,'../static/geometry.js'),'utf8'));
   run(fs.readFileSync(path.join(__dirname,'../static/blocks.js'),'utf8'));
+  run(fs.readFileSync(path.join(__dirname,'../static/answers.js'),'utf8'));
   run(fs.readFileSync(path.join(__dirname,'../static/demo.js'),'utf8'));
   run(fs.readFileSync(path.join(__dirname,'../static/bank.js'),'utf8'));await flush();
   const all = root => [root,...root.children.flatMap(child=>child.children?all(child):[child])];
@@ -168,4 +169,15 @@ test('all 16 examples render, with structural blanks, table and correct choice l
  h.run("$('paper').replaceChildren();renderQuestion(drafts[1],$('paper'))");assert.equal(h.all(h.el('paper')).filter(e=>e.className==='answer-blank').length,3);
  h.run("$('paper').replaceChildren();renderQuestion(drafts[2],$('paper'))");assert.deepEqual(h.all(h.el('paper')).filter(e=>e.className==='item-number').map(e=>e.textContent),['A.','B.','C.','D.']);
  h.run("$('paper').replaceChildren();renderQuestion(drafts[7],$('paper'))");assert.equal(h.all(h.el('paper')).filter(e=>e.tag==='table').length,1);
+});
+
+test('worksheet question mode omits answers, answer and combined modes use snapshots',async()=>{
+ const h=await setup();h.run("var q=createDemoQuestions()[15];currentPaper={title:'答案测试',items:[{question:q,answer:q.answer,lines:2}]}");
+ h.el('paper-mode').value='question';h.run('renderPaper()');
+ assert.ok(!h.all(h.el('paper')).some(n=>n.textContent==='答案：C'));
+ h.el('paper-mode').value='answer';h.run('renderPaper()');
+ assert.ok(h.all(h.el('paper')).some(n=>n.textContent==='答案：C'));
+ assert.equal(h.all(h.el('paper')).filter(n=>n.className==='answer-space').length,0);
+ h.el('paper-mode').value='both';h.run('renderPaper()');
+ assert.ok(h.all(h.el('paper')).some(n=>n.className==='paper-answers separate-page'));
 });

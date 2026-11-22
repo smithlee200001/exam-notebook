@@ -13,6 +13,7 @@ from image_utils import clean_image
 
 from content import SCHEMA as QUESTION_SCHEMA, validate, walk
 from assets import decode_asset
+from answers import validate_answer, answer_blocks, targets, status as answer_status
 
 TYPES = ['选择题', '填空题', '计算题', '解答题', '其他']
 
@@ -130,6 +131,9 @@ def make_bank(dbpath):
         CREATE TABLE IF NOT EXISTS bank_asset (
             id TEXT PRIMARY KEY, question_id INTEGER NOT NULL REFERENCES bank_question(id),
             content BLOB NOT NULL, mime_type TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS bank_answer (
+            question_id INTEGER PRIMARY KEY REFERENCES bank_question(id),
+            content TEXT NOT NULL, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
         CREATE TABLE IF NOT EXISTS worksheet (
             id TEXT PRIMARY KEY, title TEXT NOT NULL, items TEXT NOT NULL,
             created_at TEXT DEFAULT CURRENT_TIMESTAMP);
@@ -158,7 +162,12 @@ def make_bank(dbpath):
 
     @bp.post('/api/bank/validate')
     def preview():
-        return jsonify(validate(request.get_json(silent=True)))
+        payload=request.get_json(silent=True)
+        if isinstance(payload,dict) and 'question' in payload:
+            q=validate(payload['question'])
+            a=validate_answer(payload['answer'],q) if payload.get('answer') is not None else None
+            return jsonify(question=q,answer=a,status=answer_status(a,q))
+        return jsonify(validate(payload))
 
     @bp.post('/api/bank/questions')
     def save():
@@ -166,13 +175,14 @@ def make_bank(dbpath):
         if not isinstance(payload, dict) or payload.get('reviewed') is not True:
             raise ValueError('请逐题校对题面、分类及图表后确认保存')
         q = validate(payload.get('question'))
+        answer = validate_answer(payload['answer'], q) if payload.get('answer') is not None else None
         source = string(payload.get('source', ''), 200)
         uploads = payload.get('assets', {})
         if not isinstance(uploads, dict):
             raise ValueError('图片资产格式无效')
         with connect() as db:
             assets, mapping = [], {}
-            for b in walk(q['blocks']):
+            for b in walk(q['blocks'] + list(answer_blocks(answer))):
                 if b['type'] != 'image':
                     continue
                 original = b['assetId']
@@ -194,11 +204,54 @@ def make_bank(dbpath):
             qid = cur.lastrowid
             db.executemany('INSERT INTO bank_asset(id,question_id,content,mime_type) VALUES(?,?,?,?)',
                            [(aid,qid,raw,mime) for aid,raw,mime in assets])
+            if answer is not None:
+                db.execute('INSERT INTO bank_answer(question_id,content) VALUES(?,?)',(qid,json.dumps(answer,ensure_ascii=False)))
         return jsonify(id=qid, number=f'Q{qid:06d}'), 201
 
     def public(row):
         return dict(json.loads(row['content']), id=row['id'], number=f"Q{row['id']:06d}",
                     subject=row['subject'], kind=row['kind'], source=row['source'], created_at=row['created_at'])
+
+    @bp.post('/api/bank/answers/validate')
+    def check_answer():
+        payload=request.get_json(silent=True)
+        if not isinstance(payload,dict):raise ValueError('答案请求无效')
+        q=validate(payload.get('question'))
+        a=validate_answer(payload.get('answer'),q)
+        return jsonify(answer=a,status=answer_status(a,q))
+
+    @bp.route('/api/bank/questions/<int:qid>/answer', methods=['GET','PUT','DELETE'])
+    def answer(qid):
+        with connect() as db:
+            # Lock the read/write transaction so targets and assets stay consistent.
+            db.execute('BEGIN IMMEDIATE' if request.method!='GET' else 'BEGIN')
+            row=db.execute('SELECT * FROM bank_question WHERE id=?',(qid,)).fetchone()
+            if row is None:return jsonify(error='题目不存在'),404
+            q=public(row)
+            if request.method=='DELETE':
+                db.execute('DELETE FROM bank_answer WHERE question_id=?',(qid,))
+            elif request.method=='PUT':
+                payload=request.get_json(silent=True)
+                if not isinstance(payload,dict):raise ValueError('答案请求无效')
+                a=validate_answer(payload.get('answer'),q)
+                uploads=payload.get('assets',{})
+                if not isinstance(uploads,dict):raise ValueError('图片资产格式无效')
+                mapping={}
+                for b in walk(list(answer_blocks(a))):
+                    if b['type']!='image':continue
+                    aid=b['assetId']
+                    if aid in uploads:
+                        if aid not in mapping:
+                            mime,raw=decode_asset(uploads[aid]);new='asset_'+uuid.uuid4().hex
+                            db.execute('INSERT INTO bank_asset(id,question_id,content,mime_type) VALUES(?,?,?,?)',(new,qid,raw,mime))
+                            mapping[aid]=new
+                        b['assetId']=mapping[aid]
+                    elif not db.execute('SELECT 1 FROM bank_asset WHERE id=? AND question_id=?',(aid,qid)).fetchone():
+                        raise ValueError('答案图片不存在或不属于当前题目')
+                db.execute('INSERT INTO bank_answer(question_id,content) VALUES(?,?) ON CONFLICT(question_id) DO UPDATE SET content=excluded.content,updated_at=CURRENT_TIMESTAMP',(qid,json.dumps(a,ensure_ascii=False)))
+            saved=db.execute('SELECT * FROM bank_answer WHERE question_id=?',(qid,)).fetchone()
+            a=json.loads(saved['content']) if saved else None
+            return jsonify(answer=a,updated_at=saved['updated_at'] if saved else None,targets=targets(q),status=answer_status(a,q))
 
     @bp.get('/api/bank/questions')
     def listing():
@@ -227,6 +280,7 @@ def make_bank(dbpath):
             raise ValueError('请选择 1～100 道题')
         result, seen = [], set()
         with connect() as db:
+            db.execute('BEGIN IMMEDIATE')
             for item in items:
                 if not isinstance(item, dict) or type(item.get('id')) is not int:
                     raise ValueError('题目编号无效')
@@ -238,7 +292,8 @@ def make_bank(dbpath):
                 row = db.execute('SELECT * FROM bank_question WHERE id=?', (qid,)).fetchone()
                 if row is None:
                     raise ValueError('选中的题目不存在')
-                result.append({'question': public(row), 'lines': lines})
+                saved=db.execute('SELECT content FROM bank_answer WHERE question_id=?',(qid,)).fetchone()
+                result.append({'question': public(row), 'answer':json.loads(saved['content']) if saved else None, 'lines': lines})
             wid = uuid.uuid4().hex
             db.execute('INSERT INTO worksheet(id,title,items) VALUES(?,?,?)',
                        (wid, title, json.dumps(result, ensure_ascii=False)))

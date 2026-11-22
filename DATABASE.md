@@ -8,7 +8,7 @@
 
 路径优先级：`create_app(data_dir)` > `EXAM_DATA_DIR` > 默认新目录。[app.py](app.py) 确定目录，[bank.py](bank.py) 的 `make_bank()` 执行建表 SQL。没有独立 `.sql` 文件，不维护 PostgreSQL 版本。
 
-## 三张业务表
+## 四张业务表
 
 ```sql
 CREATE TABLE bank_question (
@@ -24,6 +24,11 @@ CREATE TABLE bank_asset (
     question_id INTEGER NOT NULL REFERENCES bank_question(id),
     content BLOB NOT NULL,
     mime_type TEXT NOT NULL
+);
+CREATE TABLE bank_answer (
+    question_id INTEGER PRIMARY KEY REFERENCES bank_question(id),
+    content TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE TABLE worksheet (
     id TEXT PRIMARY KEY,
@@ -89,7 +94,7 @@ CREATE INDEX bank_classification ON bank_question(subject, kind);
 
 ## 练习卷快照
 
-`worksheet.items` 保存数组，每项为 `{"question":完整题目快照,"lines":作答留白行数}`。题目包含全部嵌套内容、图片引用、显示比例和公式对齐。`lines` 范围沿用 0～20。
+`worksheet.items` 保存数组，每项为 `{"question":完整题目快照,"answer":答案文档或null,"lines":作答留白行数}`。题目包含全部嵌套内容、图片引用、显示比例和公式对齐。`lines` 范围沿用 0～20。
 
 题库后续变化不修改已有快照。资产引用不随快照重复存字节；未来添加删除功能时必须检查快照引用。本版未提供题目或资产删除接口。
 
@@ -101,3 +106,7 @@ sqlite3 data/blocks-v2/notebook.sqlite3 'SELECT id,question_id,mime_type,length(
 ```
 
 完整离线示例在 [samples/blocks-v2.json](samples/blocks-v2.json)。该文件包含演示上传资产，数据库落盘后只保留资产引用。
+
+## 标准答案
+
+`bank_answer` 按 `question_id` 保存独立答案 JSON。选择题引用选项组及正确选项 ID，填空引用 blank ID，解答引用小问或整题。详情见 [ANSWER_DESIGN.md](ANSWER_DESIGN.md)。答案、解析的图片同样归属该题资产。更新答案不会改变已有练习卷快照。

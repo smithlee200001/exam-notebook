@@ -8,7 +8,12 @@ import pytest
 from PIL import Image
 from app import create_app
 from content import validate, walk
-from scripts.generate_examples import examples
+from scripts.generate_examples import examples as answered_examples
+
+def examples():
+    qs=answered_examples()
+    for q in qs:q.pop('answer',None)
+    return qs
 import bank
 
 

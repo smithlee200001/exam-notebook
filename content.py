@@ -45,10 +45,15 @@ def validate(question):
             return e.message
         path = '.'.join(map(str, error.absolute_path)) or 'question'
         raise ValueError(f'{path}: {detail(error)[:350]}')
-    if not q['blocks']:
+    q['blocks'] = check_blocks(q['blocks'])
+    return q
+
+
+def check_blocks(blocks):
+    if not blocks:
         raise ValueError('blocks: 题目内容不能为空')
     seen = set()
-    for b in walk(q['blocks']):
+    for b in walk(blocks):
         if b['id'] in seen:
             raise ValueError(f"{b['id']}: 内容 ID 重复")
         seen.add(b['id'])
@@ -99,5 +104,19 @@ def validate(question):
             for v in value.values(): finite(v)
         if isinstance(value, list):
             for v in value: finite(v)
-    finite(q)
-    return q
+    finite(blocks)
+    return blocks
+
+
+def validate_blocks(blocks):
+    """Validate display content independently from a question envelope."""
+    blocks = copy.deepcopy(blocks)
+    for b in walk(blocks) if isinstance(blocks, list) and all(isinstance(b, dict) for b in blocks) else []:
+        if b.get('type') == 'geometry':
+            for key in ('segments','circles','polygons','labels','rightAngles','givens'):
+                b.setdefault(key, [])
+    validator = Draft202012Validator({'type':'array','items':{'$ref':'#/$defs/block'},'$defs':SCHEMA['$defs']})
+    error = next(validator.iter_errors(blocks), None)
+    if error:
+        raise ValueError('答案内容块格式错误：' + '.'.join(map(str,error.absolute_path)))
+    return check_blocks(blocks)

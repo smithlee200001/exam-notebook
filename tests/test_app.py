@@ -13,7 +13,7 @@ def test_startup_creates_only_current_tables(tmp_path):
     with sqlite3.connect(tmp_path / 'notebook.sqlite3') as conn:
         tables = {row[0] for row in conn.execute(
             "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")}
-    assert tables == {'bank_question', 'bank_asset', 'worksheet'}
+    assert tables == {'bank_question', 'bank_asset', 'bank_answer', 'worksheet'}
 
 
 @pytest.mark.parametrize('method,path', [

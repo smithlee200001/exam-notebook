@@ -67,6 +67,7 @@ function template(type){
 }
 function blank(){return {schemaVersion:2,sourceNumber:'',subject:'数学',kind:'计算题',tags:[],warnings:[],blocks:[template('text')]};}
 const rawDrafts=new WeakMap();
+function reviewPayload(q){return {question:questionPayload(q),answer:q.answer??null};}
 function questionPayload(q){return Object.fromEntries(['schemaVersion','sourceNumber','subject','kind','tags','warnings','blocks'].map(k=>[k,q[k]]));}
 function applyRaw(blocks){for(const b of blocks){if(rawDrafts.has(b)){const next=JSON.parse(rawDrafts.get(b));for(const k of Object.keys(b))delete b[k];Object.assign(b,next);rawDrafts.delete(b);}if(b.children)applyRaw(b.children);}}
 function renderDraft(){
@@ -79,13 +80,13 @@ function renderDraft(){
   const check=node('input');check.type='checkbox';check.id='draft-reviewed';check.disabled=true;
   const preview=node('div',undefined,'preview-box');
   const invalidate=()=>{previewTicket++;validated='';check.checked=false;check.disabled=true;};
-  const draw=()=>{preview.replaceChildren(node('h3','题面预览'));try{renderQuestion(q,preview);return true;}catch(e){preview.append(node('p',e.message,'warning'));return false;}};
+  const draw=()=>{preview.replaceChildren(node('h3','题面预览'));try{renderQuestion(q,preview);if(q.answer){const details=node('details');details.append(node('summary','查看答案与解析'));Answers.render(q,q.answer,details,q.assets||{});preview.append(details);}return true;}catch(e){preview.append(node('p',e.message,'warning'));return false;}};
   const updatePreview=async()=>{
     invalidate();const ticket=++previewTicket;
     try{
-      applyRaw(q.blocks);if(!draw())throw Error('内容无法渲染，请修正结构后更新预览');const payload=questionPayload(q),snapshot=JSON.stringify(payload);
+      if(answerInvalid)throw Error('请修正答案 JSON');applyRaw(q.blocks);if(!draw())throw Error('内容无法渲染，请修正结构后更新预览');const payload=reviewPayload(q),snapshot=JSON.stringify(payload);
       await post('/api/bank/validate',payload);
-      if(ticket!==previewTicket||snapshot!==JSON.stringify(questionPayload(q)))return;
+      if(ticket!==previewTicket||snapshot!==JSON.stringify(reviewPayload(q)))return;
       validated=snapshot;check.disabled=false;message('预览已通过数据校验，请核对后保存。');
     }catch(e){message(e.message);preview.append(node('p',e.message,'warning'));}
   };
@@ -159,13 +160,21 @@ function renderDraft(){
     });
   }
   editBlocks(q.blocks,editor,'question');addTools(editor,q.blocks,[...common,'options','subquestions']);
+  const answerSection=node('details',undefined,'answer-editor');answerSection.append(node('summary','编辑答案与解析'));
+  const answerFields=node('div');let answerInvalid=false;answerSection.append(answerFields);
+  Answers.editor(q,q.answer,answerFields,(a,invalid=false)=>{answerInvalid=invalid;if(!invalid)q.answer=a;invalidate();draw();},q.assets||{},async file=>{
+    if(file.size>4*1024*1024)throw Error('图片不能超过4 MB');invalidate();setImportBusy(true);
+    try{const bytes=new Uint8Array(await file.arrayBuffer());let binary='';for(const byte of bytes)binary+=String.fromCharCode(byte);
+      const asset=await post('/api/bank/assets/validate',{mimeType:file.type,content:btoa(binary)});const id='asset_'+uid();q.assets??={};q.assets[id]=asset;return id;
+    }finally{setImportBusy(false);}
+  });editor.append(answerSection);
   $('live-preview').append(preview);editor.append(button('更新题面预览',run(updatePreview)));
   const checkLabel=node('label',undefined,'check');checkLabel.append(check,document.createTextNode('已校对题面、分类、公式和图片，确认保存'));editor.append(checkLabel);
   const save=button('保存这一题到题库',run(async()=>{
     if(busy||q.saved)return;
-    if(!check.checked||check.disabled||validated!==JSON.stringify(questionPayload(q)))throw Error('请先更新预览、完成校对并勾选确认');
+    if(!check.checked||check.disabled||validated!==JSON.stringify(reviewPayload(q)))throw Error('请先更新预览、完成校对并勾选确认');
     setImportBusy(true);save.disabled=true;
-    try{const data=await post('/api/bank/questions',{question:questionPayload(q),assets:q.assets||{},source:$('source').value,reviewed:true});q.saved=data.number;renderDraft();message('已保存 '+data.number);await loadBank();}
+    try{const data=await post('/api/bank/questions',{question:questionPayload(q),answer:q.answer??null,assets:q.assets||{},source:$('source').value,reviewed:true});q.saved=data.number;renderDraft();message('已保存 '+data.number);await loadBank();}
     finally{setImportBusy(false);save.disabled=false;}
   }));save.className='primary';editor.append(save,button('移除这个草稿',()=>{drafts.splice(current,1);current=Math.max(0,current-1);renderDraft();}));
   draw();
@@ -229,7 +238,7 @@ function renderBank(){
   const filtered=questions.filter(q=>(!kind||q.kind===kind)&&(!subject||q.subject.includes(subject))&&JSON.stringify([q.number,q.source,q.subject,q.tags,q.blocks]).toLowerCase().includes(term));
   if(!filtered.length)$('bank-cards').append(node('p','暂无匹配题目。先在图片拆题页校对入库。'));
   filtered.forEach(q=>{const card=node('article',undefined,'card');card.append(node('h3',`${q.number} · ${q.subject} · ${q.kind}`),node('p',`${q.tags.join(' / ')}　来源：${q.source} ${q.sourceNumber}`));renderQuestion(q,card);
-    const picked=selection.some(s=>s.id===q.id);card.append(button(picked?'✓ 已选，点击移除':'＋ 加入练习卷',()=>{if(picked)selection=selection.filter(s=>s.id!==q.id);else selection.push({id:q.id,lines:q.kind==='选择题'?0:4});renderBank();renderSelection();}));$('bank-cards').append(card);});
+    const picked=selection.some(s=>s.id===q.id);card.append(button('查看 / 编辑答案',run(()=>openAnswerEditor(q,card))));card.append(button(picked?'✓ 已选，点击移除':'＋ 加入练习卷',()=>{if(picked)selection=selection.filter(s=>s.id!==q.id);else selection.push({id:q.id,lines:q.kind==='选择题'?0:4});renderBank();renderSelection();}));$('bank-cards').append(card);});
   $('selected-count').textContent=selection.length;
 }
 function renderSelection(){
@@ -239,10 +248,45 @@ function renderSelection(){
     row.append(button('↑',()=>{if(i){[selection[i-1],selection[i]]=[selection[i],selection[i-1]];renderSelection();}}),button('↓',()=>{if(i<selection.length-1){[selection[i+1],selection[i]]=[selection[i],selection[i+1]];renderSelection();}}),button('移除',()=>{selection.splice(i,1);renderSelection();renderBank();}));$('selection').append(row);});
   if(!selection.length)$('selection').append(node('p','先从题库选择需要的题目。'));$('compose').disabled=!selection.length;
 }
-async function openPaper(id){
-  const data=await api('/api/bank/worksheets/'+id);$('paper').replaceChildren(node('h1',data.title),node('p','姓名：____________　日期：____________','meta'));
-  data.items.forEach((item,i)=>{const section=node('section',undefined,'paper-question');section.append(node('h3',`${i+1}. ${item.question.kind}`));renderQuestion(item.question,section);const space=node('div',undefined,'answer-space');space.style.height=`${item.lines*32}px`;section.append(space);$('paper').append(section);});
-  $('print').disabled=false;tab('compose');
+let currentPaper=null;
+function renderPaper(){
+  if(!currentPaper)return;const data=currentPaper,mode=$('paper-mode').value||'question';
+  $('paper').replaceChildren();
+  if(mode!=='answer'){
+    $('paper').append(node('h1',data.title),node('p','姓名：____________　日期：____________','meta'));
+    data.items.forEach((item,i)=>{const section=node('section',undefined,'paper-question');section.append(node('h3',`${i+1}. ${item.question.kind}`));renderQuestion(item.question,section);const space=node('div',undefined,'answer-space');space.style.height=`${item.lines*32}px`;section.append(space);$('paper').append(section);});
+  }
+  if(mode!=='question'){
+    const answers=node('section',undefined,mode==='both'?'paper-answers separate-page':'paper-answers');answers.append(node('h1',data.title+' · 答案与解析'));
+    data.items.forEach((item,i)=>{const section=node('section',undefined,'paper-question');section.append(node('h3',`${i+1}. ${item.question.kind}`));Answers.render(item.question,item.answer??null,section);answers.append(section);});$('paper').append(answers);
+  }
+}
+async function openPaper(id){currentPaper=await api('/api/bank/worksheets/'+id);renderPaper();$('print').disabled=false;tab('compose');}
+$('paper-mode').onchange=renderPaper;
+async function openAnswerEditor(q,card){
+  let host=card.querySelector('.bank-answer-panel');if(host){host.remove();return;}
+  host=node('section',undefined,'bank-answer-panel');card.append(host);
+  try{
+    const result=await api('/api/bank/questions/'+q.id+'/answer');let answer=result.answer,invalid=false,uploading=false,working=false;const assets={};
+    host.append(node('h3','答案与解析'));const fields=node('div'),preview=node('div');
+    const redraw=()=>{preview.replaceChildren();Answers.render(q,answer,preview,assets);};
+    Answers.editor(q,answer,fields,(a,bad=false)=>{invalid=bad;if(!bad)answer=a;redraw();},assets,async file=>{
+      if(file.size>4*1024*1024)throw Error('图片不能超过4 MB');uploading=true;
+      try{const bytes=new Uint8Array(await file.arrayBuffer());let binary='';for(const byte of bytes)binary+=String.fromCharCode(byte);
+        const asset=await post('/api/bank/assets/validate',{mimeType:file.type,content:btoa(binary)});const id='asset_'+uid();assets[id]=asset;return id;
+      }finally{uploading=false;}
+    });
+    host.append(fields,button('保存答案',run(async()=>{
+      if(invalid)throw Error('请修正答案 JSON');if(uploading||working)throw Error('请等待当前操作完成');
+      if(!answer)throw Error('没有答案，请至少录入一项；要清空已保存答案请使用下方按钮');
+      working=true;host.inert=true;
+      try{const saved=await api('/api/bank/questions/'+q.id+'/answer',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({answer,assets})});answer=saved.answer;redraw();message('答案已保存；已有练习卷快照保持不变。');}
+      finally{working=false;host.inert=false;}
+    })),button('清空已保存答案',run(async()=>{
+      if(working||uploading)return;if(!confirm('清空此题已保存的答案？已有练习卷答案快照保留。'))return;
+      await api('/api/bank/questions/'+q.id+'/answer',{method:'DELETE'});host.remove();message('已清空此题答案。');
+    })),preview);redraw();
+  }catch(e){host.append(node('p',e.message,'warning'));}
 }
 async function loadWorksheets(){const rows=await api('/api/bank/worksheets');$('worksheets').replaceChildren();rows.forEach(w=>$('worksheets').append(button(w.title+' · '+new Date(w.created_at.replace(' ','T')+'Z').toLocaleString('zh-CN'),run(()=>openPaper(w.id)))));}
 $('compose').onclick=run(async()=>{$('compose').disabled=true;try {const result=await post('/api/bank/worksheets',{title:$('worksheet-title').value,items:selection});await openPaper(result.id);await loadWorksheets();message('练习卷已保存，可以打印或另存 PDF。');}finally{$('compose').disabled=!selection.length;}});

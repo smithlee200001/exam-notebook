@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 from PIL import Image, ImageDraw
 ROOT=Path(__file__).resolve().parents[1]
+import sys
+if str(ROOT) not in sys.path: sys.path.insert(0,str(ROOT))
 
 
 def examples():
@@ -47,7 +49,8 @@ def examples():
     q('几何图选项','选择题',[text('哪幅图包含直角标记？'),options([geometry()],[image('asset_png',100)])],['asset_png'])
     q('提示图标','填空题',[b('icon',name='warning',alt='注意',display={'sizeEm':1}),text('结果保留两位小数。\n'),b('icon',name='info',alt='提示'),text(r'\(\frac{1}{3}\approx\)'),blank(),text('。')])
     q('多系列柱图·综合题','解答题',[text('根据表格和统计图完成各题。'),table([['小组','男生','女生'],['第一组','3','3'],['第二组','5','3'],['第三组','2','3'],['第四组','4','5']]),chart('bar',True),parts([text('第二组共有多少人？'),options('5','6','8','9')],[text('女生总人数是'),blank(3),text('人。')],'请描述你从图中发现的一条信息。')])
-    return qs
+    from scripts.example_answers import attach
+    return attach(qs)
 
 
 def main():
