@@ -13,3 +13,22 @@
 页面可展开“几何图”修改 JSON；修改后点“更新题面预览”校验。宽度滑块即时预览，保存题目及组卷都会保留比例。图形嵌入选项后，其百分比以选项内容区域为基准。
 
 例 12 展示普通几何题，例 14 展示几何选项；两者均包含直角标记。运行 `python -m scripts.generate_examples` 可重新生成示例。
+
+## 用 Codex 重绘一幅配图
+
+整页拆题会给每个 image 块分配原图资产。需要重绘时，将该块对应的裁图字节、块 ID 和同一道题的题干传给下列入口。每次调用处理一幅图，返回几何草稿或保留原图的原因。提示词随项目存放在 [geometry_redraw.txt](../notebook/prompts/geometry_redraw.txt)。
+
+```python
+import base64
+from notebook.services.geometry_redraw import redraw_geometry
+
+# extracted 是 extract() 返回的单道题，image_block 是该题中选定的 image 块。
+asset = extracted["assets"][image_block["assetId"]]
+draft, reason = redraw_geometry(
+    base64.b64decode(asset["content"], validate=True),
+    block_id=image_block["id"],
+    question_text=question_text,  # 该图所属题干，必要时附对应小题
+)
+```
+
+调用方保留原裁图供对照。若得到草稿，用前端的 `Geometry.render(draft)` 按实际展示宽度预览，核对点线关系、虚实线、角弧所在扇区和角编号。逐个查看字形（含撇号）与线条、角弧、邻近文字的间距；可将文字层、线条层分别渲染后检查像素交叠。发现压线时微调点名的 `dx/dy` 或角编号的 `x/y`，再次渲染。通过校对后按块 ID 替换对应题目的配图，保存并回读核对。若返回 `(None, reason)` 或调用失败，继续使用原裁图。

@@ -62,7 +62,7 @@ def validate_geometry(block):
             raise ValueError("多边形顶点不能重复")
         for key in refs:
             point(key)
-    for angle in block["rightAngles"]:
+    for angle in block["rightAngles"] + block.get("angleArcs", []):
         distinct(angle["vertex"], angle["arms"][0])
         distinct(angle["vertex"], angle["arms"][1])
         if angle["arms"][0] == angle["arms"][1]:

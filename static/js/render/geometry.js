@@ -35,6 +35,7 @@ function validate(g) {
     "polygons",
     "labels",
     "rightAngles",
+    "angleArcs",
     "givens",
   ])
     g[key] ??= [];
@@ -54,6 +55,7 @@ function validate(g) {
     "polygons",
     "labels",
     "rightAngles",
+    "angleArcs",
     "givens",
   ]);
   if (
@@ -100,6 +102,7 @@ function validate(g) {
     "polygons",
     "labels",
     "rightAngles",
+    "angleArcs",
     "givens",
   ])
     array(g[key]);
@@ -137,7 +140,7 @@ function validate(g) {
     number(l.y);
     text(l.text);
   }
-  for (const a of g.rightAngles) {
+  for (const a of [...g.rightAngles, ...g.angleArcs]) {
     object(a, ["vertex", "arms", "size"]);
     array(a.arms, 2, 2);
     distinct(a.vertex, a.arms[0]);
@@ -233,6 +236,21 @@ function render(data) {
         ...(s.dashed ? { "stroke-dasharray": "8 7", stroke: "#7b8b7f" } : {}),
       }),
     );
+  for (const { vertex, arms, size } of g.angleArcs) {
+    const center = p(vertex);
+    const [u, v] = arms.map((id) => {
+      const dx = p(id).x - center.x, dy = p(id).y - center.y;
+      const length = Math.hypot(dx, dy);
+      return { x: dx / length, y: dy / length };
+    });
+    const end = (ray) => `${center.x + size * ray.x} ${center.y + size * ray.y}`;
+    const sweep = u.x * v.y - u.y * v.x >= 0 ? 1 : 0;
+    svg.append(el("path", {
+      ...stroke,
+      "stroke-width": 2,
+      d: `M ${end(u)} A ${size} ${size} 0 0 ${sweep} ${end(v)}`,
+    }));
+  }
   for (const a of g.rightAngles) {
     const o = p(a.vertex),
       unit = (id) => {

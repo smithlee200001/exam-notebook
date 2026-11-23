@@ -209,6 +209,9 @@
       "maxItems": 100,
       "minItems": 0
     },
+    "angleArcs": {
+      "$ref": "#/properties/rightAngles"
+    },
     "rightAngles": {
       "type": "array",
       "items": {
