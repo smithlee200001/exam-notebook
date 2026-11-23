@@ -1,0 +1,61 @@
+{
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "const": 2
+    },
+    "sourceNumber": {
+      "type": "string",
+      "maxLength": 20000,
+      "pattern": "^[^\\u0000]*$"
+    },
+    "subject": {
+      "type": "string",
+      "maxLength": 20000,
+      "pattern": "^[^\\u0000]*$"
+    },
+    "kind": {
+      "enum": [
+        "选择题",
+        "填空题",
+        "计算题",
+        "解答题",
+        "其他"
+      ]
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 20000,
+        "pattern": "^[^\\u0000]*$"
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 20000,
+        "pattern": "^[^\\u0000]*$"
+      }
+    },
+    "blocks": {
+      "type": "array",
+      "items": {
+        "$ref": "blocks.schema.json#/$defs/block"
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "sourceNumber",
+    "subject",
+    "kind",
+    "tags",
+    "warnings",
+    "blocks"
+  ],
+  "additionalProperties": false,
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://exam-notebook.local/schemas/question.schema.json"
+}

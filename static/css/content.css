@@ -1,0 +1,135 @@
+.question-body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: #263d35;
+}
+.question-body img {
+  display: block;
+  max-height: 260px;
+  margin: 12px auto;
+}
+.question-body .math-display {
+  text-align: center;
+  margin: 16px 0;
+  overflow-x: auto;
+}
+.question-body li {
+  margin: 8px 0;
+}
+.geometry-diagram {
+  display: block;
+  width: 60%;
+  max-width: 100%;
+  height: auto;
+  margin: 12px auto;
+  white-space: normal;
+}
+.question-body .math-display math[display="block"] {
+  display: inline-block;
+  margin: 0;
+}
+.block-flow {
+  white-space: pre-wrap;
+  line-height: 2;
+  min-width: 0;
+}
+.answer-blank {
+  display: inline-block;
+  max-width: 100%;
+  height: 1.25em;
+  border-bottom: 1px solid currentColor;
+  vertical-align: baseline;
+  margin: 0 0.25em;
+}
+.content-icon {
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 0.35em;
+  line-height: 1;
+}
+.block-options {
+  display: grid;
+  grid-template-columns: repeat(var(--option-columns, 1), minmax(0, 1fr));
+  gap: 12px 20px;
+  margin: 14px 0;
+  white-space: normal;
+}
+.block-option,
+.block-subquestion {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+.block-subquestion {
+  margin: 12px 0;
+}
+.item-number {
+  flex: none;
+}
+.item-content {
+  flex: 1;
+  min-width: 0;
+  white-space: pre-wrap;
+}
+.content-table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  margin-top: 16px;
+  margin-bottom: 16px;
+  white-space: pre-wrap;
+}
+.content-table th,
+.content-table td {
+  border: 1px solid #aab9ad;
+  padding: 10px;
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+}
+.content-table th {
+  text-align: center;
+  background: #eff3ed;
+}
+.content-table td {
+  text-align: left;
+}
+.chart-diagram {
+  display: block;
+  height: auto;
+  margin: 16px auto;
+  white-space: normal;
+  overflow: visible;
+}
+.question-body img {
+  height: auto;
+  max-height: none;
+  object-fit: contain;
+}
+@media (max-width: 600px) {
+  .block-options {
+    grid-template-columns: repeat(
+      min(var(--option-columns, 1), 2),
+      minmax(0, 1fr)
+    );
+  }
+}
+.answer-entry {
+  padding: 12px 0;
+  border-bottom: 1px dashed #dbe2d7;
+}
+.answer-entry > strong {
+  display: block;
+  color: #345d46;
+  margin-bottom: 8px;
+}
+.answer-explanation-label {
+  font-size: 13px;
+  color: #738078;
+  margin-top: 10px;
+}
+.answer-content .hint {
+  font-size: 12px;
+}
+.answer-entry > p {
+  color: inherit;
+}

@@ -1,0 +1,291 @@
+[
+  {
+    "sourceNumber": "1",
+    "targets": [
+      {
+        "target": "block",
+        "targetId": "q1_b2",
+        "type": "fill",
+        "label": "第1空"
+      }
+    ]
+  },
+  {
+    "sourceNumber": "2",
+    "targets": [
+      {
+        "target": "block",
+        "targetId": "q2_b2",
+        "type": "fill",
+        "label": "第1空"
+      },
+      {
+        "target": "block",
+        "targetId": "q2_b4",
+        "type": "fill",
+        "label": "第2空"
+      },
+      {
+        "target": "block",
+        "targetId": "q2_b6",
+        "type": "fill",
+        "label": "第3空"
+      }
+    ]
+  },
+  {
+    "sourceNumber": "3",
+    "targets": [
+      {
+        "target": "block",
+        "targetId": "q3_b2",
+        "type": "choice",
+        "label": "选择题",
+        "mode": "single",
+        "optionIds": [
+          "q3_b3",
+          "q3_b4",
+          "q3_b5",
+          "q3_b6"
+        ]
+      }
+    ]
+  },
+  {
+    "sourceNumber": "4",
+    "targets": [
+      {
+        "target": "block",
+        "targetId": "q4_b2",
+        "type": "choice",
+        "label": "选择题",
+        "mode": "multiple",
+        "optionIds": [
+          "q4_b3",
+          "q4_b4",
+          "q4_b5",
+          "q4_b6"
+        ]
+      }
+    ]
+  },
+  {
+    "sourceNumber": "5",
+    "targets": [
+      {
+        "target": "block",
+        "targetId": "q5_b3",
+        "type": "solution",
+        "label": "（1）解答"
+      },
+      {
+        "target": "block",
+        "targetId": "q5_b6",
+        "type": "fill",
+        "label": "（2）第1空"
+      }
+    ]
+  },
+  {
+    "sourceNumber": "6",
+    "targets": [
+      {
+        "target": "block",
+        "targetId": "q6_b5",
+        "type": "choice",
+        "label": "（1）选择题",
+        "mode": "single",
+        "optionIds": [
+          "q6_b6",
+          "q6_b7"
+        ]
+      },
+      {
+        "target": "block",
+        "targetId": "q6_b10",
+        "type": "fill",
+        "label": "（2）第1空"
+      },
+      {
+        "target": "block",
+        "targetId": "q6_b12",
+        "type": "fill",
+        "label": "（2）第2空"
+      }
+    ]
+  },
+  {
+    "sourceNumber": "7",
+    "targets": [
+      {
+        "target": "question",
+        "type": "solution",
+        "label": "整题解答"
+      }
+    ]
+  },
+  {
+    "sourceNumber": "8",
+    "targets": [
+      {
+        "target": "block",
+        "targetId": "q8_b11",
+        "type": "fill",
+        "label": "第1空"
+      },
+      {
+        "target": "block",
+        "targetId": "q8_b16",
+        "type": "fill",
+        "label": "第2空"
+      }
+    ]
+  },
+  {
+    "sourceNumber": "9",
+    "targets": [
+      {
+        "target": "block",
+        "targetId": "q9_b11",
+        "type": "fill",
+        "label": "第1空"
+      },
+      {
+        "target": "block",
+        "targetId": "q9_b16",
+        "type": "fill",
+        "label": "第2空"
+      }
+    ]
+  },
+  {
+    "sourceNumber": "10",
+    "targets": [
+      {
+        "target": "block",
+        "targetId": "q10_b6",
+        "type": "fill",
+        "label": "（1）第1空"
+      },
+      {
+        "target": "block",
+        "targetId": "q10_b10",
+        "type": "fill",
+        "label": "（2）第1空"
+      },
+      {
+        "target": "block",
+        "targetId": "q10_b12",
+        "type": "fill",
+        "label": "（2）第2空"
+      }
+    ]
+  },
+  {
+    "sourceNumber": "11",
+    "targets": [
+      {
+        "target": "block",
+        "targetId": "q11_b4",
+        "type": "solution",
+        "label": "（1）解答"
+      },
+      {
+        "target": "block",
+        "targetId": "q11_b5",
+        "type": "solution",
+        "label": "（2）解答"
+      }
+    ]
+  },
+  {
+    "sourceNumber": "12",
+    "targets": [
+      {
+        "target": "block",
+        "targetId": "q12_b6",
+        "type": "fill",
+        "label": "（1）第1空"
+      },
+      {
+        "target": "block",
+        "targetId": "q12_b8",
+        "type": "solution",
+        "label": "（2）解答"
+      }
+    ]
+  },
+  {
+    "sourceNumber": "13",
+    "targets": [
+      {
+        "target": "block",
+        "targetId": "q13_b2",
+        "type": "choice",
+        "label": "选择题",
+        "mode": "single",
+        "optionIds": [
+          "q13_b3",
+          "q13_b6"
+        ]
+      }
+    ]
+  },
+  {
+    "sourceNumber": "14",
+    "targets": [
+      {
+        "target": "block",
+        "targetId": "q14_b2",
+        "type": "choice",
+        "label": "选择题",
+        "mode": "single",
+        "optionIds": [
+          "q14_b3",
+          "q14_b5"
+        ]
+      }
+    ]
+  },
+  {
+    "sourceNumber": "15",
+    "targets": [
+      {
+        "target": "block",
+        "targetId": "q15_b5",
+        "type": "fill",
+        "label": "第1空"
+      }
+    ]
+  },
+  {
+    "sourceNumber": "16",
+    "targets": [
+      {
+        "target": "block",
+        "targetId": "q16_b27",
+        "type": "choice",
+        "label": "（1）选择题",
+        "mode": "single",
+        "optionIds": [
+          "q16_b28",
+          "q16_b29",
+          "q16_b30",
+          "q16_b31"
+        ]
+      },
+      {
+        "target": "block",
+        "targetId": "q16_b34",
+        "type": "fill",
+        "label": "（2）第1空"
+      },
+      {
+        "target": "block",
+        "targetId": "q16_b36",
+        "type": "solution",
+        "label": "（3）解答"
+      }
+    ]
+  }
+]

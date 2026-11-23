@@ -1,0 +1,200 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "questions",
+    "crops"
+  ],
+  "properties": {
+    "questions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "schemaVersion": {
+            "const": 2
+          },
+          "sourceNumber": {
+            "type": "string",
+            "maxLength": 20000,
+            "pattern": "^[^\\u0000]*$"
+          },
+          "subject": {
+            "type": "string",
+            "maxLength": 20000,
+            "pattern": "^[^\\u0000]*$"
+          },
+          "kind": {
+            "enum": [
+              "选择题",
+              "填空题",
+              "计算题",
+              "解答题",
+              "其他"
+            ]
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 20000,
+              "pattern": "^[^\\u0000]*$"
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 20000,
+              "pattern": "^[^\\u0000]*$"
+            }
+          },
+          "blocks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/ocrBlock"
+            }
+          }
+        },
+        "required": [
+          "schemaVersion",
+          "sourceNumber",
+          "subject",
+          "kind",
+          "tags",
+          "warnings",
+          "blocks"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "crops": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "assetId",
+          "box"
+        ],
+        "properties": {
+          "assetId": {
+            "type": "string"
+          },
+          "box": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "ocrBlock": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "text",
+            "blank",
+            "image",
+            "options",
+            "option",
+            "subquestions",
+            "subquestion",
+            "table",
+            "row",
+            "cell"
+          ]
+        },
+        "version": {
+          "type": "integer",
+          "enum": [
+            1
+          ]
+        },
+        "text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "assetId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "alt": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "mode": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "role": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "children": {
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ocrBlock"
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "type",
+        "version",
+        "text",
+        "assetId",
+        "alt",
+        "mode",
+        "role",
+        "children"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

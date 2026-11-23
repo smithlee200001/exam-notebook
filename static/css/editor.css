@@ -1,0 +1,158 @@
+.block-editor {
+  border: 1px solid #dce3d7;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 12px 0;
+}
+.block-tools {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.block-tools strong {
+  margin-right: auto;
+  font-size: 12px;
+}
+.block-tools button {
+  padding: 3px 8px;
+}
+.block-editor img {
+  max-height: 260px;
+  object-fit: contain;
+}
+#draft-nav button {
+  padding: 6px 10px;
+}
+#draft-nav button.active {
+  border-color: #345d46;
+  box-shadow: inset 0 0 0 1px #345d46;
+  background: #edf3eb;
+}
+.block-editor textarea {
+  min-height: 80px;
+}
+.preview-box {
+  border-top: 1px dashed #d6ded4;
+  margin-top: 18px;
+  padding-top: 15px;
+}
+.block-editor textarea.geometry-editor {
+  min-height: 280px;
+  font:
+    12px/1.5 ui-monospace,
+    monospace;
+  tab-size: 2;
+}
+.geometry-size {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.geometry-size input[type="range"] {
+  flex: 1;
+  width: auto;
+  background: transparent;
+  padding: 0;
+}
+.geometry-size output {
+  min-width: 3em;
+  font-variant-numeric: tabular-nums;
+}
+.geometry-size-preview {
+  border: 1px dashed #d6ded4;
+  border-radius: 8px;
+  margin-top: 10px;
+}
+#editor > label > select,
+.formula-alignment select {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  margin-top: 5px;
+  padding: 10px 12px;
+  border: 1px solid #dbe2d7;
+  border-radius: 7px;
+  background-color: #fbfcf9;
+  color: #2d4435;
+  font:
+    14px/1.6 system-ui,
+    -apple-system,
+    sans-serif;
+}
+#editor > label > select:focus-visible,
+.formula-alignment select:focus-visible {
+  outline: 2px solid #345d46;
+  outline-offset: 2px;
+}
+.block-editor {
+  border: 1px solid #dbe2d7;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 12px 0;
+  background: #fcfdfb;
+}
+.block-editor .block-editor {
+  background: #fff;
+  margin-left: 8px;
+}
+.block-editor summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #345d46;
+}
+.block-tools {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0;
+}
+.block-editor select,
+.add-blocks select {
+  padding: 8px;
+  border: 1px solid #dbe2d7;
+  border-radius: 6px;
+  font: inherit;
+  max-width: 100%;
+}
+.block-editor label {
+  display: block;
+  margin-top: 10px;
+}
+.add-blocks {
+  margin: 12px 0;
+}
+#draft-nav {
+  max-height: 180px;
+  overflow: auto;
+  padding: 3px;
+}
+@media (max-width: 600px) {
+  .block-editor .block-editor {
+    margin-left: 0;
+    padding: 8px;
+  }
+}
+.answer-editor,
+.bank-answer-panel {
+  border-top: 1px solid #dbe2d7;
+  margin-top: 20px;
+  padding-top: 16px;
+}
+.answer-editor summary,
+.answer-editor-item summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #345d46;
+}
+.answer-editor-item {
+  padding: 12px;
+  border: 1px solid #dbe2d7;
+  border-radius: 8px;
+  margin: 12px 0;
+}
+.answer-editor textarea {
+  min-height: 70px;
+}
+.bank-answer-panel .check {
+  align-items: flex-start;
+}

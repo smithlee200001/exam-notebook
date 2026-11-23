@@ -23,7 +23,7 @@ EXAM_CODEX_BIN=/opt/homebrew/bin/codex EXAM_CODEX_SANDBOX=danger-full-access .ve
 
 ## 题型显示示例
 
-首页点击「体验 16 题示例」，可验证单空、多空、单选、多选、小问、表格、PNG/SVG 图片、柱状图、折线图、几何图和提示图标。每道题均可编辑、保存和组卷，不调用 Codex。题面及核对答案见 [示例说明](EXAMPLES.md)，数据格式见 [Block 设计](BLOCK_DESIGN.md)。
+首页点击「体验 16 题示例」，可验证单空、多空、单选、多选、小问、表格、PNG/SVG 图片、柱状图、折线图、几何图和提示图标。每道题均可编辑、保存和组卷，不调用 Codex。题面及核对答案见 [示例说明](docs/examples.md)，数据格式见 [Block 设计](docs/blocks.md)。
 
 ## 新版流程
 
@@ -35,14 +35,14 @@ EXAM_CODEX_BIN=/opt/homebrew/bin/codex EXAM_CODEX_SANDBOX=danger-full-access .ve
 
 ## 数据与范围
 
-表结构、字段解释、JSON 示例、事务与查询方法见 [数据库设计说明](DATABASE.md)。
+表结构、字段解释、JSON 示例、事务与查询方法见 [数据库设计说明](docs/database.md)。
 
 - SQLite 只使用 `bank_question`、`bank_asset`、`bank_answer`、`worksheet` 四张业务表；练习卷保存所选题目的内容快照和行数。
 - 识别草稿在浏览器内存中，刷新即丢失；已保存题目和试卷可跨重启恢复。原图仅在 CLI 临时目录中处理，正常结束清理；程序崩溃时不保证即时清理。
 - 这是一版可运行的核心闭环：暂不含已入库题目的编辑删除、自动合并拆错的题目、批量多页导入、难度评估或 DOCX 导出。拆错的草稿可手动修改内容、添加或移除题目。答案解析不从试卷自动提取。
 - 自动化检查覆盖结构校验、图表裁剪、编号、事务失败、组卷顺序和重启持久化；真实模型的识别准确率仍需用实际试卷验收。
 
-结构化调用依据：[OpenAI 官方非交互模式文档](https://learn.chatgpt.com/docs/non-interactive-mode)。新 API 与数据模型参见 [ARCHITECTURE.md](ARCHITECTURE.md)。
+结构化调用依据：[OpenAI 官方非交互模式文档](https://learn.chatgpt.com/docs/non-interactive-mode)。新 API 与数据模型参见 [ARCHITECTURE.md](docs/architecture.md)。
 
 ## Codex CLI 配置
 
@@ -63,10 +63,7 @@ EXAM_CODEX_BIN=/opt/homebrew/bin/codex EXAM_CODEX_SANDBOX=danger-full-access .ve
 ```sh
 python -m pip install -r requirements-lock.txt
 python -m pytest -q -rs
-node --check static/bank.js
-node --check static/geometry.js
-node --check static/blocks.js
-node --test tests/*.cjs
+node --experimental-vm-modules --test tests/frontend/test_*.cjs
 ```
 
 自动化测试使用合成图片和假 CLI，不访问 OpenAI，不验证真实模型准确率。覆盖图片校验与元数据清理、结构化识别、失败和超时清理、题目入库、组卷快照、重启持久化及前端照片切换竞态。
@@ -75,4 +72,14 @@ node --test tests/*.cjs
 
 16 道示例已附标准答案与解析。加载示例后展开题面下方“查看答案与解析”，可在右侧编辑；题库卡片也可单独查看、编辑答案。新练习卷保存答案快照，打印预览可切换“仅题目”“仅答案与解析”“题目及独立答案页”。旧试卷不自动回填答案。
 
-本版支持部分录入，未实现自动判分。详见 [答案设计与操作说明](ANSWER_DESIGN.md)。
+本版支持部分录入，未实现自动判分。详见 [答案设计与操作说明](docs/answers.md)。
+
+## 代码目录
+
+- `notebook/`：后端应用、API、业务服务、领域校验、存储、CLI 接入和 Schema。
+- `static/js/`：原生 ES Modules，按模型、渲染、编辑器及页面划分；`static/css/` 按用途拆分样式。
+- `examples/`：示例题与答案的 Python 源数据。`python -m scripts.generate_examples` 生成唯一的浏览器示例文件 `static/examples/questions.json`。
+- `tests/backend/`、`tests/frontend/`、`tests/fixtures/`：后端测试、前端模块测试和跨端核对数据。
+- `docs/`：设计与操作文档。详细职责与修改入口见 [架构说明](docs/architecture.md)。
+
+前端无需安装 npm 依赖或执行构建。Node 测试通过 `--experimental-vm-modules` 在隔离 DOM 中加载浏览器使用的实际模块。

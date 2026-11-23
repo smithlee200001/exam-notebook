@@ -1,34 +1,40 @@
 """All tests are offline: synthetic images, disposable keys, fake CLI only."""
+
 import sys
 import pytest
 
 
 @pytest.fixture(autouse=True)
 def offline_ocr(monkeypatch):
-    monkeypatch.delenv('EXAM_CODEX_SANDBOX', raising=False)
-    monkeypatch.delenv('CODEX_API_KEY', raising=False)
-    monkeypatch.delenv('EXAM_CODEX_API_KEY', raising=False)
-    monkeypatch.setenv('EXAM_CODEX_BIN', '/missing-test-codex')
+    monkeypatch.delenv("EXAM_CODEX_SANDBOX", raising=False)
+    monkeypatch.delenv("CODEX_API_KEY", raising=False)
+    monkeypatch.delenv("EXAM_CODEX_API_KEY", raising=False)
+    monkeypatch.setenv("EXAM_CODEX_BIN", "/missing-test-codex")
 
 
 @pytest.fixture
 def fake_cli(tmp_path, monkeypatch):
-    import codex_ocr
-    script = tmp_path / 'fake codex 识别'
-    temp_root = tmp_path / 'transient'
-    temp_root.mkdir()
-    monkeypatch.setattr(codex_ocr.tempfile, 'tempdir', str(temp_root))
-    monkeypatch.setenv('EXAM_CODEX_BIN', str(script))
-    monkeypatch.setenv('EXAM_CODEX_API_KEY', 'synthetic-test-only-not-a-real-key')
-    login_home = tmp_path / 'login-home'
-    login_home.mkdir()
-    (login_home / 'login-marker').write_text('synthetic login')
-    monkeypatch.setenv('CODEX_HOME', str(login_home))
-    monkeypatch.setenv('UNRELATED_SECRET', 'must-not-be-inherited')
-    monkeypatch.setenv('OPENAI_BASE_URL', 'https://must-not-be-inherited.invalid')
+    from notebook.integrations import codex_cli as codex_ocr
 
-    def configure(mode='ok', output='{"questions":[],"crops":[]}'):
-        script.write_text('#!' + sys.executable + '\n' + '''
+    script = tmp_path / "fake codex 识别"
+    temp_root = tmp_path / "transient"
+    temp_root.mkdir()
+    monkeypatch.setattr(codex_ocr.tempfile, "tempdir", str(temp_root))
+    monkeypatch.setenv("EXAM_CODEX_BIN", str(script))
+    monkeypatch.setenv("EXAM_CODEX_API_KEY", "synthetic-test-only-not-a-real-key")
+    login_home = tmp_path / "login-home"
+    login_home.mkdir()
+    (login_home / "login-marker").write_text("synthetic login")
+    monkeypatch.setenv("CODEX_HOME", str(login_home))
+    monkeypatch.setenv("UNRELATED_SECRET", "must-not-be-inherited")
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://must-not-be-inherited.invalid")
+
+    def configure(mode="ok", output='{"questions":[],"crops":[]}'):
+        script.write_text(
+            "#!"
+            + sys.executable
+            + "\n"
+            + """
 import json, os, sys, time
 from pathlib import Path
 args = sys.argv[1:]
@@ -56,15 +62,23 @@ schema = json.loads(Path(args[args.index('--output-schema')+1]).read_text())
 assert schema['additionalProperties'] is False and schema['required'] == ['questions', 'crops']
 prompt = sys.stdin.read()
 assert 'untrusted data' in prompt and 'Do not use' in prompt
-''' + '\nmode = ' + repr(mode) + '\noutput = ' + repr(output) + '''
+"""
+            + "\nmode = "
+            + repr(mode)
+            + "\noutput = "
+            + repr(output)
+            + """
 if mode == 'timeout': time.sleep(30)
 if mode == 'fail':
     print('PRIVATE OCR AND TOKEN', file=sys.stderr)
     sys.exit(1)
 if mode != 'missing':
     Path(args[args.index('--output-last-message')+1]).write_text(output, encoding='utf-8')
-''', encoding='utf-8')
+""",
+            encoding="utf-8",
+        )
         script.chmod(0o700)
         return temp_root
+
     configure()
     return configure
