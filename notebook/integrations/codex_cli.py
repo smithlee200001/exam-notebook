@@ -96,7 +96,7 @@ def sandbox_mode():
     return mode
 
 
-def command(binary, folder):
+def command(binary, folder, image_names=("crop.png",)):
     args = [
         binary,
         "exec",
@@ -110,8 +110,7 @@ def command(binary, folder):
         "never",
         "--cd",
         str(folder),
-        "--image",
-        str(folder / "crop.png"),
+        *(arg for name in image_names for arg in ("--image", str(folder / name))),
         "--output-schema",
         str(folder / "schema.json"),
         "--output-last-message",
@@ -166,14 +165,19 @@ def run_structured(png, schema, instructions, reader):
         # directory outside the repository, removed on all normal/error exit paths.
         with tempfile.TemporaryDirectory(prefix="exam-codex-") as name:
             folder = Path(name)
-            (folder / "crop.png").write_bytes(png)
+            images = [png] if isinstance(png, bytes) else png
+            image_names = []
+            for index, data in enumerate(images):
+                name = "crop.png" if index == 0 else f"figure_{index + 1}.png"
+                (folder / name).write_bytes(data)
+                image_names.append(name)
             (folder / "schema.json").write_text(json.dumps(schema), encoding="utf-8")
             env = cli_environment()
             env.update(TMPDIR=str(folder), TMP=str(folder), TEMP=str(folder))
             prompt = instructions + "\nLanguage: Chinese and English."
             try:
                 with subprocess.Popen(
-                    command(binary, folder),
+                    command(binary, folder, image_names),
                     cwd=folder,
                     env=env,
                     stdin=subprocess.PIPE,

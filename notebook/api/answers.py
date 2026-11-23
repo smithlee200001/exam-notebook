@@ -14,3 +14,11 @@ def answers_answer(qid):
         dbpath(), qid, request.method, request.get_json(silent=True)
     )
     return (jsonify(error="题目不存在"), 404) if result is None else jsonify(result)
+
+
+@bp.post("/questions/<int:qid>/answer/solve")
+def solve_saved_question(qid):
+    from notebook.services.solve import solve_question
+
+    result = solve_question(dbpath(), qid)
+    return (jsonify(error="题目不存在"), 404) if result is None else jsonify(result)

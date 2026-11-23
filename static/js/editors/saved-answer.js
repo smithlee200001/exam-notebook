@@ -13,6 +13,7 @@ async function openAnswerEditor(q, card) {
   try {
     const result = await api("/api/bank/questions/" + q.id + "/answer");
     let answer = result.answer,
+      dirty = false,
       invalid = false,
       uploading = false,
       working = false;
@@ -29,6 +30,7 @@ async function openAnswerEditor(q, card) {
       answer,
       fields,
       (a, bad = false) => {
+        dirty = true;
         invalid = bad;
         if (!bad) answer = a;
         redraw();
@@ -53,6 +55,27 @@ async function openAnswerEditor(q, card) {
         }
       },
     );
+    if (result.status.state !== "complete") {
+      const solve = button("用 OpenAI 解题并保存", run(async () => {
+        if (working || uploading) return;
+        if (invalid || dirty)
+          throw Error("请先保存已编辑的答案");
+        working = true;
+        host.inert = true;
+        solve.textContent = "正在解题…";
+        try {
+          await post("/api/bank/questions/" + q.id + "/answer/solve", {});
+          host.remove();
+          await openAnswerEditor(q, card);
+          message("AI 答案已保存");
+        } finally {
+          host.inert = false;
+          working = false;
+          solve.textContent = "用 OpenAI 解题并保存";
+        }
+      }));
+      host.append(solve);
+    }
     host.append(
       fields,
       button(
@@ -73,6 +96,7 @@ async function openAnswerEditor(q, card) {
               body: JSON.stringify({ answer, assets }),
             });
             answer = saved.answer;
+            dirty = false;
             redraw();
             message("答案已保存；已有练习卷快照保持不变。");
           } finally {

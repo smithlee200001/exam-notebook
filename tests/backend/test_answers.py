@@ -203,3 +203,49 @@ def test_example_supplement_is_idempotent_and_keeps_existing_answers(tmp_path):
     saved = c.get(f"/api/bank/questions/{qid}/answer").json
     assert supplement(app) == 0
     assert c.get(f"/api/bank/questions/{qid}/answer").json == saved
+
+
+def test_solve_fills_only_missing_targets_and_reuses_answer(tmp_path, monkeypatch):
+    from notebook.integrations import codex_cli
+
+    c = create_app(tmp_path).test_client()
+    q, a, assets = split(examples()[1])
+    *original, missing = a["entries"]
+    saved = c.post("/api/bank/questions", json={
+        "question": q, "reviewed": True, "assets": assets,
+        "answer": dict(schemaVersion=1, entries=original),
+    })
+    url = f"/api/bank/questions/{saved.json['id']}/answer"
+    calls = []
+
+    def generate(images, schema, prompt, reader):
+        calls.append(prompt)
+        path = tmp_path / "model-result.json"
+        path.write_text(json.dumps({"entries": [{
+            "target": missing["targetId"], "text": missing["text"],
+            "optionIds": [], "explanation": "计算得到。",
+        }]}))
+        return reader(path)
+
+    monkeypatch.setattr(codex_cli, "run_structured", generate)
+    before = c.get(url).json["answer"]["entries"][0]
+    result = c.post(url + "/solve")
+    assert result.status_code == 200, result.json
+    assert result.json["status"]["state"] == "complete"
+    assert result.json["answer"]["entries"][0] == before
+    assert c.post(url + "/solve").json == c.get(url).json == result.json
+    assert len(calls) == 1
+
+
+def test_solve_rejects_incomplete_model_result(tmp_path, monkeypatch):
+    from notebook.integrations import codex_cli
+
+    c = create_app(tmp_path).test_client()
+    q, _, _ = split(examples()[0])
+    saved = c.post("/api/bank/questions", json={"question": q, "reviewed": True})
+    url = f"/api/bank/questions/{saved.json['id']}/answer"
+    path = tmp_path / "empty.json"
+    path.write_text('{"entries":[]}')
+    monkeypatch.setattr(codex_cli, "run_structured", lambda imgs, s, p, read: read(path))
+    assert c.post(url + "/solve").status_code == 400
+    assert c.get(url).json["answer"] is None
