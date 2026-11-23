@@ -35,7 +35,8 @@ def test_static_entry_and_all_module_imports_are_served(tmp_path, monkeypatch):
         for relative in re.findall(r'from\s+[\'"]([^\'"]+)[\'"]', path.read_text()):
             target = (path.parent / relative).resolve().relative_to(ROOT)
             assert client.get("/" + str(target)).status_code == 200, str(target)
-    assert client.get("/static/examples/questions.json").json == examples()
+    fixture = ROOT / "static/examples/questions.json"
+    assert client.get("/static/examples/questions.json").data == fixture.read_bytes()
 
 
 def test_shared_block_schema_resolves_in_questions_and_answers():
